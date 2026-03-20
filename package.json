@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@expo-google-fonts/dm-sans": "^0.4.2",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-voice/voice": "^3.2.4",
     "expo": "~55.0.8",

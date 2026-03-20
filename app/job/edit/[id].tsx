@@ -3,6 +3,7 @@ import { Alert, Pressable, StyleSheet, Text } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import JobForm, { JobFormValues, jobToFormValues } from '../../../components/JobForm';
 import { loadJobs, saveJob } from '../../../lib/storage';
+import { C } from '../../../lib/theme';
 import { Job } from '../../../types';
 
 const SENT_STATUSES = new Set(['quote_sent', 'accepted', 'invoiced', 'paid']);
@@ -85,12 +86,21 @@ export default function EditJob() {
 
 const styles = StyleSheet.create({
   saveBtn: {
-    position: 'absolute', bottom: 32, left: 16, right: 16,
-    backgroundColor: '#007AFF', borderRadius: 12, padding: 16, alignItems: 'center',
-    shadowColor: '#007AFF', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
+    position: 'absolute',
+    bottom: 32,
+    left: 16,
+    right: 16,
+    backgroundColor: C.amber,
+    borderRadius: 18,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: C.amber,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
   },
-  saveBtnDisabled: { backgroundColor: '#AEAEB2' },
+  saveBtnDisabled: { backgroundColor: C.border2, shadowOpacity: 0 },
   saveBtnPressed: { opacity: 0.85 },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  saveBtnText: { color: '#111111', fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
 });

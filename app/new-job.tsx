@@ -18,6 +18,7 @@ import {
 } from 'expo-speech-recognition';
 import { extractJobFromText } from '../lib/claude';
 import { generateId, loadJobs, saveJob } from '../lib/storage';
+import { C } from '../lib/theme';
 import { Job } from '../types';
 
 type VoiceState = 'idle' | 'recording' | 'processing';
@@ -29,7 +30,6 @@ export default function NewJob() {
   const router = useRouter();
   const partialRef = useRef('');
 
-  // Accumulate partial results while recording
   useSpeechRecognitionEvent('result', event => {
     const transcript = event.results[0]?.transcript ?? '';
     partialRef.current = transcript;
@@ -49,7 +49,6 @@ export default function NewJob() {
     }
   });
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       ExpoSpeechRecognitionModule.abort();
@@ -122,13 +121,12 @@ export default function NewJob() {
           Z.B.: „Tapezierarbeiten bei Müller GmbH, Hauptstraße 5. 3 Zimmer, je 20m². Material und Arbeit."
         </Text>
 
-        {/* Input row with mic button */}
         <View style={styles.inputRow}>
           <TextInput
             style={styles.input}
             multiline
             placeholder="Beschreibung eingeben oder Mikrofon tippen…"
-            placeholderTextColor="#AEAEB2"
+            placeholderTextColor={C.textDim}
             value={input}
             onChangeText={setInput}
             autoFocus
@@ -173,7 +171,7 @@ export default function NewJob() {
           disabled={!canSubmit}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color="#111111" />
           ) : (
             <Text style={styles.buttonText}>Auftrag erstellen</Text>
           )}
@@ -184,62 +182,60 @@ export default function NewJob() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  container: { flex: 1, backgroundColor: C.bg },
   scroll: { padding: 20, gap: 12 },
-  label: { fontSize: 17, fontWeight: '600', color: '#1a1a1a' },
-  hint: { fontSize: 14, color: '#8E8E93', lineHeight: 20 },
+  label: { fontSize: 17, fontFamily: 'DMSans_600SemiBold', color: C.text },
+  hint: { fontSize: 14, fontFamily: 'DMSans_400Regular', color: C.textMid, lineHeight: 20 },
   inputRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   input: {
     flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: C.surface2,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: C.border2,
     padding: 16,
     fontSize: 16,
-    color: '#1a1a1a',
+    fontFamily: 'DMSans_400Regular',
+    color: C.text,
     minHeight: 160,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
   },
   micButton: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#fff',
+    backgroundColor: C.surface2,
+    borderWidth: 1,
+    borderColor: C.border2,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
     marginTop: 4,
   },
   micButtonActive: {
-    backgroundColor: '#FF3B30',
-    shadowColor: '#FF3B30',
-    shadowOpacity: 0.35,
+    backgroundColor: '#D95535',
+    borderColor: '#D95535',
   },
   micButtonPressed: { opacity: 0.8 },
   stopIcon: { width: 14, height: 14, borderRadius: 2, backgroundColor: '#fff' },
   micIconView: { alignItems: 'center' },
-  micCapsule: { width: 10, height: 16, borderRadius: 5, backgroundColor: '#007AFF', borderWidth: 0 },
-  micStand: { width: 16, height: 6, borderTopLeftRadius: 0, borderTopRightRadius: 0, borderBottomLeftRadius: 8, borderBottomRightRadius: 8, borderWidth: 2, borderTopWidth: 0, borderColor: '#007AFF', marginTop: 1 },
-  micBase: { width: 12, height: 2, backgroundColor: '#007AFF', marginTop: 1 },
-  recordingHint: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  recordingDot: {
-    width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF3B30',
+  micCapsule: { width: 10, height: 16, borderRadius: 5, backgroundColor: C.amber },
+  micStand: {
+    width: 16, height: 6,
+    borderBottomLeftRadius: 8, borderBottomRightRadius: 8,
+    borderWidth: 2, borderTopWidth: 0, borderColor: C.amber,
+    marginTop: 1,
   },
-  recordingText: { fontSize: 13, color: '#FF3B30' },
+  micBase: { width: 12, height: 2, backgroundColor: C.amber, marginTop: 1 },
+  recordingHint: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  recordingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#D95535' },
+  recordingText: { fontSize: 13, fontFamily: 'DMSans_400Regular', color: '#D95535' },
   button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
+    backgroundColor: C.amber,
+    borderRadius: 18,
     padding: 16,
     alignItems: 'center',
     marginTop: 8,
   },
-  buttonDisabled: { backgroundColor: '#AEAEB2' },
+  buttonDisabled: { backgroundColor: C.border2 },
   buttonPressed: { opacity: 0.85 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  buttonText: { color: '#111111', fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
 });

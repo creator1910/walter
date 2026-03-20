@@ -1,16 +1,33 @@
+import {
+  DMSans_400Regular,
+  DMSans_500Medium,
+  DMSans_600SemiBold,
+  DMSans_700Bold,
+  useFonts,
+} from '@expo-google-fonts/dm-sans';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    DMSans_400Regular,
+    DMSans_500Medium,
+    DMSans_600SemiBold,
+    DMSans_700Bold,
+  });
+
+  if (!fontsLoaded) return null;
+
   return (
     <>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: '#fff' },
-          headerTintColor: '#1a1a1a',
-          headerTitleStyle: { fontWeight: '600' },
-          contentStyle: { backgroundColor: '#f5f5f5' },
+          headerStyle: { backgroundColor: '#1C1C1C' },
+          headerTintColor: '#F5F4F2',
+          headerTitleStyle: { fontFamily: 'DMSans_600SemiBold', fontSize: 17 },
+          contentStyle: { backgroundColor: '#111111' },
+          headerShadowVisible: false,
         }}
       >
         <Stack.Screen name="index" options={{ title: 'Walter' }} />

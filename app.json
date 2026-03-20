@@ -19,7 +19,7 @@
         "NSPhotoLibraryUsageDescription": "Walter speichert Fotos zu deinen Aufträgen.",
         "NSCameraUsageDescription": "Walter verwendet die Kamera, um Fotos zu Aufträgen hinzuzufügen."
       },
-      "bundleIdentifier": "com.anonymous.walter"
+      "bundleIdentifier": "com.oleknorr.walter"
     },
     "android": {
       "adaptiveIcon": {

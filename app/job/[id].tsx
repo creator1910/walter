@@ -14,6 +14,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { calculateTotals } from '../../lib/claude';
 import { generateAndSharePDF } from '../../lib/pdf';
 import { deletePhoto, generateDocNumber, loadJobs, saveJob, savePhoto } from '../../lib/storage';
+import { C, STATUS_BG, STATUS_LABEL, STATUS_TEXT } from '../../lib/theme';
 import { Job, JobStatus } from '../../types';
 
 const NEXT_STATUS: Partial<Record<JobStatus, JobStatus>> = {
@@ -119,90 +120,103 @@ export default function JobDetail() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Header */}
-      <View style={styles.card}>
-        <Text style={styles.customerName}>{job.customer.name || '—'}</Text>
-        {job.customer.address && <Text style={styles.meta}>{job.customer.address}</Text>}
-        {job.customer.phone && <Text style={styles.meta}>{job.customer.phone}</Text>}
-        {job.customer.email && <Text style={styles.meta}>{job.customer.email}</Text>}
-      </View>
-
-      {/* Document numbers */}
-      {(job.quoteNumber || job.invoiceNumber) && (
-        <View style={styles.card}>
-          {job.quoteNumber && (
-            <Row label="Angebotsnr." value={job.quoteNumber} />
-          )}
-          {job.invoiceNumber && (
-            <Row label="Rechnungsnr." value={job.invoiceNumber} />
-          )}
+    <View style={styles.container}>
+      {/* Hero block — Gesamtbetrag at top */}
+      <View style={styles.hero}>
+        <Text style={styles.heroLabel}>Gesamtbetrag inkl. MwSt.</Text>
+        <Text style={styles.heroAmount}>{formatCurrency(gross)}</Text>
+        <View style={[styles.heroBadge, { backgroundColor: STATUS_BG[job.status] }]}>
+          <View style={[styles.heroBadgeDot, { backgroundColor: STATUS_TEXT[job.status] }]} />
+          <Text style={[styles.heroBadgeText, { color: STATUS_TEXT[job.status] }]}>
+            {STATUS_LABEL[job.status]}
+          </Text>
         </View>
-      )}
-
-      {/* Description */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Leistungsbeschreibung</Text>
-        <Text style={styles.description}>{job.description}</Text>
       </View>
 
-      {/* Line items */}
-      {job.lineItems.length > 0 && (
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        {/* Customer */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Positionen</Text>
-          {job.lineItems.map((item, i) => (
-            <View key={i} style={styles.lineItem}>
-              <View style={styles.lineItemLeft}>
-                <Text style={styles.lineItemDesc}>{item.description}</Text>
-                <Text style={styles.lineItemQty}>
-                  {item.quantity} {item.unit} × {formatCurrency(item.unitPrice)}
+          <Text style={styles.customerName}>{job.customer.name || '—'}</Text>
+          {job.customer.address && <Text style={styles.meta}>{job.customer.address}</Text>}
+          {job.customer.phone && <Text style={styles.meta}>{job.customer.phone}</Text>}
+          {job.customer.email && <Text style={styles.meta}>{job.customer.email}</Text>}
+        </View>
+
+        {/* Document numbers */}
+        {(job.quoteNumber || job.invoiceNumber) && (
+          <View style={styles.card}>
+            {job.quoteNumber && <Row label="Angebotsnr." value={job.quoteNumber} />}
+            {job.invoiceNumber && <Row label="Rechnungsnr." value={job.invoiceNumber} />}
+          </View>
+        )}
+
+        {/* Description */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Leistungsbeschreibung</Text>
+          <Text style={styles.description}>{job.description}</Text>
+        </View>
+
+        {/* Line items */}
+        {job.lineItems.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Positionen</Text>
+            {job.lineItems.map((item, i) => (
+              <View key={i} style={styles.lineItem}>
+                <View style={styles.lineItemLeft}>
+                  <Text style={styles.lineItemDesc}>{item.description}</Text>
+                  <Text style={styles.lineItemQty}>
+                    {item.quantity} {item.unit} × {formatCurrency(item.unitPrice)}
+                  </Text>
+                </View>
+                <Text style={styles.lineItemTotal}>
+                  {formatCurrency(item.quantity * item.unitPrice)}
                 </Text>
               </View>
-              <Text style={styles.lineItemTotal}>
-                {formatCurrency(item.quantity * item.unitPrice)}
-              </Text>
-            </View>
-          ))}
-          <View style={styles.divider} />
-          <Row label="Netto" value={formatCurrency(net)} />
-          <Row label={`MwSt. ${job.vatRate * 100}%`} value={formatCurrency(vat)} />
-          <Row label="Gesamt" value={formatCurrency(gross)} bold />
-        </View>
-      )}
-
-      {/* Notes */}
-      {job.notes && (
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Hinweise</Text>
-          <Text style={styles.description}>{job.notes}</Text>
-        </View>
-      )}
-
-      {/* Photos */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Fotos</Text>
-        <View style={styles.photoGrid}>
-          {(job.photos ?? []).map(uri => (
-            <Pressable
-              key={uri}
-              onPress={() => setLightboxUri(uri)}
-              onLongPress={() => handleDeletePhoto(uri)}
-              style={styles.photoThumb}
-            >
-              <Image source={{ uri }} style={styles.photoImage} />
-            </Pressable>
-          ))}
-          <Pressable style={styles.addPhotoButton} onPress={handleAddPhoto}>
-            <View style={styles.addPhotoIcon}>
-              <View style={styles.addPhotoH} />
-              <View style={styles.addPhotoV} />
-            </View>
-          </Pressable>
-        </View>
-        {(job.photos ?? []).length > 0 && (
-          <Text style={styles.photoHint}>Gedrückt halten zum Löschen</Text>
+            ))}
+            <View style={styles.divider} />
+            <Row label="Netto" value={formatCurrency(net)} />
+            <Row label={`MwSt. ${job.vatRate * 100}%`} value={formatCurrency(vat)} />
+            <Row label="Gesamt" value={formatCurrency(gross)} bold />
+          </View>
         )}
-      </View>
+
+        {/* Notes */}
+        {job.notes && (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Hinweise</Text>
+            <Text style={styles.description}>{job.notes}</Text>
+          </View>
+        )}
+
+        {/* Photos */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Fotos</Text>
+          <View style={styles.photoGrid}>
+            {(job.photos ?? []).map(uri => (
+              <Pressable
+                key={uri}
+                onPress={() => setLightboxUri(uri)}
+                onLongPress={() => handleDeletePhoto(uri)}
+                style={styles.photoThumb}
+              >
+                <Image source={{ uri }} style={styles.photoImage} />
+              </Pressable>
+            ))}
+            <Pressable style={styles.addPhotoButton} onPress={handleAddPhoto}>
+              <View style={styles.addPhotoIcon}>
+                <View style={styles.addPhotoH} />
+                <View style={styles.addPhotoV} />
+              </View>
+            </Pressable>
+          </View>
+          {(job.photos ?? []).length > 0 && (
+            <Text style={styles.photoHint}>Gedrückt halten zum Löschen</Text>
+          )}
+        </View>
+
+        {/* Bottom spacer so content clears the fixed bar */}
+        <View style={{ height: 16 }} />
+      </ScrollView>
 
       {/* Lightbox */}
       <Modal visible={lightboxUri !== null} transparent animationType="fade" onRequestClose={() => setLightboxUri(null)}>
@@ -213,116 +227,181 @@ export default function JobDetail() {
         </Pressable>
       </Modal>
 
-      {/* Actions */}
-      <View style={styles.actions}>
-        <Pressable
-          style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
-          onPress={() => router.push(`/job/edit/${job.id}`)}
-        >
-          <Text style={styles.secondaryButtonText}>Bearbeiten</Text>
-        </Pressable>
-        {job.quoteNumber && job.invoiceNumber ? (
-          <>
-            <Pressable
-              style={({ pressed }) => [styles.secondaryButton, sharingPDF === 'quote' && styles.buttonDisabled, pressed && styles.buttonPressed]}
-              onPress={() => handleSharePDF('quote')}
-              disabled={sharingPDF !== null}
-            >
-              <Text style={styles.secondaryButtonText}>{sharingPDF === 'quote' ? 'PDF…' : 'Angebot'}</Text>
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [styles.secondaryButton, sharingPDF === 'invoice' && styles.buttonDisabled, pressed && styles.buttonPressed]}
-              onPress={() => handleSharePDF('invoice')}
-              disabled={sharingPDF !== null}
-            >
-              <Text style={styles.secondaryButtonText}>{sharingPDF === 'invoice' ? 'PDF…' : 'Rechnung'}</Text>
-            </Pressable>
-          </>
-        ) : (
+      {/* Fixed bottom bar */}
+      <View style={styles.bottomBar}>
+        <View style={styles.secondaryRow}>
           <Pressable
-            style={({ pressed }) => [styles.secondaryButton, sharingPDF !== null && styles.buttonDisabled, pressed && styles.buttonPressed]}
-            onPress={() => handleSharePDF(job.invoiceNumber ? 'invoice' : 'quote')}
-            disabled={sharingPDF !== null}
+            style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
+            onPress={() => router.push(`/job/edit/${job.id}`)}
           >
-            <Text style={styles.secondaryButtonText}>{sharingPDF !== null ? 'PDF…' : 'PDF teilen'}</Text>
+            <Text style={styles.secondaryButtonText}>Bearbeiten</Text>
+          </Pressable>
+
+          {job.quoteNumber && job.invoiceNumber ? (
+            <>
+              <Pressable
+                style={({ pressed }) => [styles.secondaryButton, sharingPDF === 'quote' && styles.buttonDisabled, pressed && styles.buttonPressed]}
+                onPress={() => handleSharePDF('quote')}
+                disabled={sharingPDF !== null}
+              >
+                <Text style={styles.secondaryButtonText}>{sharingPDF === 'quote' ? 'PDF…' : 'Angebot'}</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [styles.secondaryButton, sharingPDF === 'invoice' && styles.buttonDisabled, pressed && styles.buttonPressed]}
+                onPress={() => handleSharePDF('invoice')}
+                disabled={sharingPDF !== null}
+              >
+                <Text style={styles.secondaryButtonText}>{sharingPDF === 'invoice' ? 'PDF…' : 'Rechnung'}</Text>
+              </Pressable>
+            </>
+          ) : (
+            <Pressable
+              style={({ pressed }) => [styles.secondaryButton, sharingPDF !== null && styles.buttonDisabled, pressed && styles.buttonPressed]}
+              onPress={() => handleSharePDF(job.invoiceNumber ? 'invoice' : 'quote')}
+              disabled={sharingPDF !== null}
+            >
+              <Text style={styles.secondaryButtonText}>{sharingPDF !== null ? 'PDF…' : 'PDF teilen'}</Text>
+            </Pressable>
+          )}
+        </View>
+
+        {nextLabel && (
+          <Pressable
+            style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
+            onPress={advanceStatus}
+          >
+            <Text style={styles.primaryButtonText}>{nextLabel}</Text>
           </Pressable>
         )}
       </View>
-      {nextLabel && (
-        <Pressable
-          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-          onPress={advanceStatus}
-        >
-          <Text style={styles.buttonText}>{nextLabel}</Text>
-        </Pressable>
-      )}
-    </ScrollView>
+    </View>
   );
 }
 
 function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   return (
     <View style={styles.row}>
-      <Text style={[styles.rowLabel, bold && styles.bold]}>{label}</Text>
-      <Text style={[styles.rowValue, bold && styles.bold]}>{value}</Text>
+      <Text style={[styles.rowLabel, bold && styles.rowLabelBold]}>{label}</Text>
+      <Text style={[styles.rowValue, bold && styles.rowValueBold]}>{value}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  content: { padding: 16, gap: 12, paddingBottom: 40 },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
+  container: { flex: 1, backgroundColor: C.bg },
+
+  // Hero
+  hero: {
+    backgroundColor: C.surface,
+    paddingHorizontal: 18,
+    paddingTop: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+    alignItems: 'flex-start',
+    gap: 6,
   },
-  customerName: { fontSize: 20, fontWeight: '700', color: '#1a1a1a', marginBottom: 4 },
-  meta: { fontSize: 14, color: '#6B6B6B', marginTop: 2 },
-  sectionTitle: { fontSize: 13, fontWeight: '600', color: '#8E8E93', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
-  description: { fontSize: 15, color: '#1a1a1a', lineHeight: 22 },
+  heroLabel: { fontSize: 12, fontFamily: 'DMSans_400Regular', color: C.textMid, textTransform: 'uppercase', letterSpacing: 1 },
+  heroAmount: {
+    fontSize: 36,
+    fontFamily: 'DMSans_700Bold',
+    color: C.text,
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -1.5,
+  },
+  heroBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 100,
+    marginTop: 2,
+  },
+  heroBadgeDot: { width: 6, height: 6, borderRadius: 3 },
+  heroBadgeText: { fontSize: 12, fontFamily: 'DMSans_500Medium' },
+
+  // Scroll
+  scroll: { flex: 1 },
+  content: { padding: 16, gap: 10 },
+
+  // Cards
+  card: {
+    backgroundColor: C.surface,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  customerName: { fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: C.text, marginBottom: 4 },
+  meta: { fontSize: 12, fontFamily: 'DMSans_400Regular', color: C.textMid, marginTop: 2 },
+  sectionTitle: {
+    fontSize: 11,
+    fontFamily: 'DMSans_600SemiBold',
+    color: C.textDim,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 10,
+  },
+  description: { fontSize: 15, fontFamily: 'DMSans_400Regular', color: C.text, lineHeight: 22 },
+
+  // Line items
   lineItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 8 },
   lineItemLeft: { flex: 1, marginRight: 12 },
-  lineItemDesc: { fontSize: 15, color: '#1a1a1a' },
-  lineItemQty: { fontSize: 13, color: '#8E8E93', marginTop: 2 },
-  lineItemTotal: { fontSize: 15, color: '#1a1a1a', fontWeight: '500' },
-  divider: { height: 1, backgroundColor: '#F2F2F7', marginVertical: 8 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
-  rowLabel: { fontSize: 15, color: '#6B6B6B' },
-  rowValue: { fontSize: 15, color: '#1a1a1a' },
-  bold: { fontWeight: '700', color: '#1a1a1a' },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },
-  secondaryButton: {
-    flex: 1, borderWidth: 1.5, borderColor: '#007AFF',
-    borderRadius: 12, padding: 14, alignItems: 'center',
-  },
-  secondaryButtonText: { color: '#007AFF', fontSize: 15, fontWeight: '600' },
-  buttonDisabled: { borderColor: '#AEAEB2' },
-  button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  buttonPressed: { opacity: 0.85 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  lineItemDesc: { fontSize: 15, fontFamily: 'DMSans_400Regular', color: C.text },
+  lineItemQty: { fontSize: 12, fontFamily: 'DMSans_400Regular', color: C.textMid, marginTop: 2 },
+  lineItemTotal: { fontSize: 15, fontFamily: 'DMSans_500Medium', color: C.text, fontVariant: ['tabular-nums'] },
+  divider: { height: 1, backgroundColor: C.border, marginVertical: 8 },
+
+  // Row (totals)
+  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 },
+  rowLabel: { fontSize: 15, fontFamily: 'DMSans_400Regular', color: C.textMid },
+  rowValue: { fontSize: 15, fontFamily: 'DMSans_400Regular', color: C.text, fontVariant: ['tabular-nums'] },
+  rowLabelBold: { fontFamily: 'DMSans_600SemiBold', color: C.text },
+  rowValueBold: { fontFamily: 'DMSans_700Bold', color: C.text },
+
+  // Photos
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   photoThumb: { width: 80, height: 80, borderRadius: 8, overflow: 'hidden' },
   photoImage: { width: 80, height: 80 },
   addPhotoButton: {
     width: 80, height: 80, borderRadius: 8,
-    borderWidth: 1.5, borderColor: '#007AFF', borderStyle: 'dashed',
+    borderWidth: 1, borderColor: C.border2, borderStyle: 'dashed',
     alignItems: 'center', justifyContent: 'center',
   },
   addPhotoIcon: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
-  addPhotoH: { position: 'absolute', width: 24, height: 2, backgroundColor: '#007AFF', borderRadius: 1 },
-  addPhotoV: { position: 'absolute', width: 2, height: 24, backgroundColor: '#007AFF', borderRadius: 1 },
-  photoHint: { fontSize: 12, color: '#AEAEB2', marginTop: 6 },
+  addPhotoH: { position: 'absolute', width: 24, height: 2, backgroundColor: C.textMid, borderRadius: 1 },
+  addPhotoV: { position: 'absolute', width: 2, height: 24, backgroundColor: C.textMid, borderRadius: 1 },
+  photoHint: { fontSize: 12, fontFamily: 'DMSans_400Regular', color: C.textDim, marginTop: 6 },
+
+  // Lightbox
   lightboxBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
   lightboxImage: { width: '100%', height: '100%' },
+
+  // Bottom bar
+  bottomBar: {
+    backgroundColor: C.surface,
+    borderTopWidth: 1,
+    borderTopColor: C.border,
+    padding: 16,
+    gap: 10,
+  },
+  secondaryRow: { flexDirection: 'row', gap: 10 },
+  secondaryButton: {
+    flex: 1,
+    backgroundColor: C.surface2,
+    borderRadius: 14,
+    padding: 14,
+    alignItems: 'center',
+  },
+  secondaryButtonText: { color: C.text, fontSize: 15, fontFamily: 'DMSans_500Medium' },
+  primaryButton: {
+    backgroundColor: C.amber,
+    borderRadius: 18,
+    padding: 16,
+    alignItems: 'center',
+  },
+  primaryButtonText: { color: '#111111', fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
+  buttonDisabled: { opacity: 0.4 },
+  buttonPressed: { opacity: 0.85 },
 });

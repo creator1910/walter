@@ -8,23 +8,10 @@ import {
 } from 'react-native';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { loadJobs } from '../lib/storage';
+import { C, STATUS_BG, STATUS_LABEL, STATUS_TEXT } from '../lib/theme';
 import { Job, JobStatus } from '../types';
 
-const STATUS_LABEL: Record<JobStatus, string> = {
-  draft: 'Entwurf',
-  quote_sent: 'Angebot versendet',
-  accepted: 'Angenommen',
-  invoiced: 'Rechnung gestellt',
-  paid: 'Bezahlt',
-};
-
-const STATUS_COLOR: Record<JobStatus, string> = {
-  draft: '#8E8E93',
-  quote_sent: '#007AFF',
-  accepted: '#34C759',
-  invoiced: '#FF9500',
-  paid: '#30D158',
-};
+const ACTIVE_STATUSES = new Set<JobStatus>(['accepted', 'invoiced']);
 
 export default function JobList() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -42,9 +29,9 @@ export default function JobList() {
             accessibilityLabel="Firmenprofil"
           >
             <View style={{ width: 22, height: 22, alignItems: 'center', justifyContent: 'center' }}>
-              <View style={{ width: 22, height: 2, backgroundColor: '#007AFF', borderRadius: 1, marginBottom: 5 }} />
-              <View style={{ width: 22, height: 2, backgroundColor: '#007AFF', borderRadius: 1, marginBottom: 5 }} />
-              <View style={{ width: 22, height: 2, backgroundColor: '#007AFF', borderRadius: 1 }} />
+              <View style={{ width: 22, height: 2, backgroundColor: C.amber, borderRadius: 1, marginBottom: 5 }} />
+              <View style={{ width: 22, height: 2, backgroundColor: C.amber, borderRadius: 1, marginBottom: 5 }} />
+              <View style={{ width: 22, height: 2, backgroundColor: C.amber, borderRadius: 1 }} />
             </View>
           </Pressable>
         ),
@@ -64,23 +51,31 @@ export default function JobList() {
             <Text style={styles.emptySubtitle}>Tippe auf + um einen neuen Auftrag anzulegen</Text>
           </View>
         }
-        renderItem={({ item }) => (
-          <Pressable
-            style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-            onPress={() => router.push(`/job/${item.id}`)}
-          >
-            <View style={styles.cardHeader}>
-              <Text style={styles.customerName}>{item.customer.name || 'Unbekannter Kunde'}</Text>
-              <View style={[styles.badge, { backgroundColor: STATUS_COLOR[item.status] + '20' }]}>
-                <Text style={[styles.badgeText, { color: STATUS_COLOR[item.status] }]}>
-                  {STATUS_LABEL[item.status]}
-                </Text>
+        renderItem={({ item }) => {
+          const isActive = ACTIVE_STATUSES.has(item.status);
+          return (
+            <Pressable
+              style={({ pressed }) => [
+                styles.card,
+                isActive && styles.cardActive,
+                pressed && styles.cardPressed,
+              ]}
+              onPress={() => router.push(`/job/${item.id}`)}
+            >
+              <View style={styles.cardHeader}>
+                <Text style={styles.customerName}>{item.customer.name || 'Unbekannter Kunde'}</Text>
+                <View style={[styles.badge, { backgroundColor: STATUS_BG[item.status] }]}>
+                  <View style={[styles.badgeDot, { backgroundColor: STATUS_TEXT[item.status] }]} />
+                  <Text style={[styles.badgeText, { color: STATUS_TEXT[item.status] }]}>
+                    {STATUS_LABEL[item.status]}
+                  </Text>
+                </View>
               </View>
-            </View>
-            <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
-            <Text style={styles.date}>{new Date(item.createdAt).toLocaleDateString('de-DE')}</Text>
-          </Pressable>
-        )}
+              <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
+              <Text style={styles.date}>{new Date(item.createdAt).toLocaleDateString('de-DE')}</Text>
+            </Pressable>
+          );
+        }}
       />
       <Pressable
         style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
@@ -93,45 +88,55 @@ export default function JobList() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  list: { padding: 16, gap: 12 },
+  container: { flex: 1, backgroundColor: C.bg },
+  list: { padding: 16, gap: 10 },
   emptyContainer: { flex: 1 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  emptyTitle: { fontSize: 17, fontWeight: '600', color: '#1a1a1a', marginBottom: 8 },
-  emptySubtitle: { fontSize: 15, color: '#8E8E93', textAlign: 'center' },
+  emptyTitle: { fontSize: 17, fontFamily: 'DMSans_600SemiBold', color: C.text, marginBottom: 8 },
+  emptySubtitle: { fontSize: 15, fontFamily: 'DMSans_400Regular', color: C.textMid, textAlign: 'center' },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: C.surface,
+    borderRadius: 14,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderLeftWidth: 1,
+  },
+  cardActive: {
+    borderLeftWidth: 2,
+    borderLeftColor: C.amber,
   },
   cardPressed: { opacity: 0.7 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  customerName: { fontSize: 16, fontWeight: '600', color: '#1a1a1a', flex: 1, marginRight: 8 },
-  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  badgeText: { fontSize: 12, fontWeight: '600' },
-  description: { fontSize: 14, color: '#6B6B6B', marginBottom: 8, lineHeight: 20 },
-  date: { fontSize: 12, color: '#AEAEB2' },
+  customerName: { fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: C.text, flex: 1, marginRight: 8 },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 100,
+  },
+  badgeDot: { width: 6, height: 6, borderRadius: 3 },
+  badgeText: { fontSize: 12, fontFamily: 'DMSans_500Medium' },
+  description: { fontSize: 14, fontFamily: 'DMSans_400Regular', color: C.textMid, marginBottom: 8, lineHeight: 20 },
+  date: { fontSize: 12, fontFamily: 'DMSans_400Regular', color: C.textDim },
   fab: {
     position: 'absolute',
     bottom: 32,
     right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#007AFF',
+    width: 54,
+    height: 54,
+    borderRadius: 9999,
+    backgroundColor: C.amber,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#007AFF',
+    shadowColor: C.amber,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
     elevation: 6,
   },
   fabPressed: { opacity: 0.85 },
-  fabIcon: { fontSize: 28, color: '#fff', lineHeight: 32 },
+  fabIcon: { fontSize: 28, color: '#111111', lineHeight: 32, fontFamily: 'DMSans_400Regular' },
 });

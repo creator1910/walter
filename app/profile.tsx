@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { loadProfile, saveProfile } from '../lib/storage';
+import { C } from '../lib/theme';
 import { CompanyProfile } from '../types';
 
 const EMPTY: CompanyProfile = {
@@ -129,7 +130,7 @@ function Field({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#AEAEB2"
+        placeholderTextColor={C.textDim}
         keyboardType={keyboardType ?? 'default'}
         autoCapitalize={autoCapitalize ?? 'words'}
         returnKeyType="next"
@@ -140,49 +141,48 @@ function Field({
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  container: { flex: 1, backgroundColor: C.bg },
   content: { padding: 16, gap: 16, paddingBottom: 40 },
   section: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: C.surface,
+    borderRadius: 14,
     padding: 16,
     gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: C.border,
   },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#8E8E93',
+    fontSize: 11,
+    fontFamily: 'DMSans_600SemiBold',
+    color: C.textDim,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
     marginBottom: 2,
   },
-  hint: { fontSize: 13, color: '#8E8E93', marginTop: -4 },
+  hint: { fontSize: 13, fontFamily: 'DMSans_400Regular', color: C.textMid, marginTop: -4 },
   field: { gap: 4 },
-  label: { fontSize: 13, fontWeight: '500', color: '#6B6B6B' },
+  label: { fontSize: 13, fontFamily: 'DMSans_500Medium', color: C.textMid },
   input: {
     fontSize: 15,
-    color: '#1a1a1a',
+    fontFamily: 'DMSans_400Regular',
+    color: C.text,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: C.border2,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: C.surface2,
   },
   row: { flexDirection: 'row', gap: 10 },
   zipField: { width: 90 },
   cityField: { flex: 1 },
   button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
+    backgroundColor: C.amber,
+    borderRadius: 18,
     padding: 16,
     alignItems: 'center',
   },
-  buttonDisabled: { backgroundColor: '#AEAEB2' },
+  buttonDisabled: { backgroundColor: C.border2 },
   buttonPressed: { opacity: 0.85 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  buttonText: { color: '#111111', fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
 });

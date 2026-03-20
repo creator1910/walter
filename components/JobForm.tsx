@@ -7,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import { Customer, Job, LineItem } from '../types';
+import { C } from '../lib/theme';
 
 export interface JobFormValues {
   customer: Customer;
@@ -106,7 +107,7 @@ export default function JobForm({ values, onChange }: Props) {
           value={values.description}
           onChangeText={v => onChange({ ...values, description: v })}
           placeholder="Beschreibung der Arbeiten…"
-          placeholderTextColor="#AEAEB2"
+          placeholderTextColor={C.textDim}
           textAlignVertical="top"
         />
       </View>
@@ -187,7 +188,7 @@ export default function JobForm({ values, onChange }: Props) {
           value={values.notes}
           onChangeText={v => onChange({ ...values, notes: v })}
           placeholder="Zahlungsbedingungen, Anmerkungen…"
-          placeholderTextColor="#AEAEB2"
+          placeholderTextColor={C.textDim}
           textAlignVertical="top"
         />
       </View>
@@ -218,7 +219,7 @@ function Field({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#AEAEB2"
+        placeholderTextColor={C.textDim}
         keyboardType={keyboardType ?? 'default'}
         autoCapitalize="none"
       />
@@ -227,43 +228,66 @@ function Field({
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, gap: 8, paddingBottom: 40 },
+  container: { padding: 16, gap: 8, paddingBottom: 120 },
   sectionTitle: {
-    fontSize: 13, fontWeight: '600', color: '#8E8E93',
-    textTransform: 'uppercase', letterSpacing: 0.5,
-    marginTop: 8, marginBottom: 4, marginLeft: 4,
+    fontSize: 11,
+    fontFamily: 'DMSans_600SemiBold',
+    color: C.textDim,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginTop: 8,
+    marginBottom: 4,
+    marginLeft: 4,
   },
   card: {
-    backgroundColor: '#fff', borderRadius: 12,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+    backgroundColor: C.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: C.border,
     overflow: 'hidden',
   },
   field: { paddingHorizontal: 14, paddingVertical: 10 },
-  fieldBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E5E5EA' },
-  fieldLabel: { fontSize: 12, color: '#8E8E93', marginBottom: 2 },
-  fieldInput: { fontSize: 15, color: '#1a1a1a' },
-  textArea: { padding: 14, fontSize: 15, color: '#1a1a1a', minHeight: 80 },
-  lineItemHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 14, paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E5E5EA',
+  fieldBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
+  fieldLabel: { fontSize: 12, fontFamily: 'DMSans_400Regular', color: C.textMid, marginBottom: 2 },
+  fieldInput: { fontSize: 15, fontFamily: 'DMSans_400Regular', color: C.text },
+  textArea: {
+    padding: 14,
+    fontSize: 15,
+    fontFamily: 'DMSans_400Regular',
+    color: C.text,
+    minHeight: 80,
   },
-  lineItemNum: { fontSize: 13, fontWeight: '600', color: '#8E8E93' },
-  removeBtn: { fontSize: 13, color: '#FF3B30' },
+  lineItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: C.border,
+  },
+  lineItemNum: { fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: C.textMid },
+  removeBtn: { fontSize: 13, fontFamily: 'DMSans_400Regular', color: C.error },
   row: { flexDirection: 'row' },
   rowField: { flex: 1 },
   addBtn: {
-    borderWidth: StyleSheet.hairlineWidth, borderColor: '#007AFF',
-    borderRadius: 10, padding: 12, alignItems: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.amber,
+    borderRadius: 10,
+    padding: 12,
+    alignItems: 'center',
   },
-  addBtnText: { color: '#007AFF', fontSize: 15, fontWeight: '500' },
+  addBtnText: { color: C.amber, fontSize: 15, fontFamily: 'DMSans_500Medium' },
   vatRow: { flexDirection: 'row', padding: 12, gap: 10 },
   vatChip: {
-    flex: 1, paddingVertical: 8, borderRadius: 8,
-    borderWidth: 1, borderColor: '#E5E5EA', alignItems: 'center',
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: C.border2,
+    alignItems: 'center',
   },
-  vatChipActive: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
-  vatChipText: { fontSize: 15, color: '#1a1a1a', fontWeight: '500' },
-  vatChipTextActive: { color: '#fff' },
+  vatChipActive: { backgroundColor: C.amber, borderColor: C.amber },
+  vatChipText: { fontSize: 15, fontFamily: 'DMSans_500Medium', color: C.textMid },
+  vatChipTextActive: { color: '#111111' },
 });
