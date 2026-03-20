@@ -6,7 +6,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { loadJobs } from '../lib/storage';
 import { Job, JobStatus } from '../types';
 
@@ -29,11 +29,23 @@ const STATUS_COLOR: Record<JobStatus, string> = {
 export default function JobList() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const router = useRouter();
+  const navigation = useNavigation();
 
   useFocusEffect(
     useCallback(() => {
       loadJobs().then(setJobs);
-    }, [])
+      navigation.setOptions({
+        headerRight: () => (
+          <Pressable
+            onPress={() => router.push('/profile')}
+            style={({ pressed }) => [{ padding: 8, marginRight: 4 }, pressed && { opacity: 0.5 }]}
+            accessibilityLabel="Firmenprofil"
+          >
+            <Text style={{ fontSize: 20 }}>⚙️</Text>
+          </Pressable>
+        ),
+      });
+    }, [navigation, router])
   );
 
   return (

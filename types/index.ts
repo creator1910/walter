@@ -1,5 +1,17 @@
 export type JobStatus = 'draft' | 'quote_sent' | 'accepted' | 'invoiced' | 'paid';
 
+export interface CompanyProfile {
+  name: string;
+  street: string;
+  zip: string;
+  city: string;
+  phone: string;
+  email: string;
+  taxNumber: string; // Steuernummer
+  iban: string;
+  bic: string;
+}
+
 export interface Customer {
   name: string;
   address?: string;

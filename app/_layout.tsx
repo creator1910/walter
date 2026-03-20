@@ -17,6 +17,7 @@ export default function RootLayout() {
         <Stack.Screen name="new-job" options={{ title: 'Neuer Auftrag', presentation: 'modal' }} />
         <Stack.Screen name="job/[id]" options={{ title: 'Auftrag' }} />
         <Stack.Screen name="job/edit/[id]" options={{ title: 'Bearbeiten' }} />
+        <Stack.Screen name="profile" options={{ title: 'Firmenprofil', presentation: 'modal' }} />
       </Stack>
     </>
   );

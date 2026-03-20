@@ -1,6 +1,7 @@
 import * as Print from 'expo-print';
-import { Job } from '../types';
+import { CompanyProfile, Job } from '../types';
 import { calculateTotals } from './claude';
+import { loadProfile } from './storage';
 
 function formatCurrency(amount: number): string {
   return amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
@@ -10,7 +11,7 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('de-DE');
 }
 
-export function buildHTMLTemplate(job: Job): string {
+export function buildHTMLTemplate(job: Job, profile?: CompanyProfile | null): string {
   const isQuote = job.status === 'draft' || job.status === 'quote_sent' || job.status === 'accepted';
   const docType = isQuote ? 'Angebot' : 'Rechnung';
   const docNumber = isQuote ? (job.quoteNumber ?? '—') : (job.invoiceNumber ?? '—');
@@ -95,9 +96,10 @@ export function buildHTMLTemplate(job: Job): string {
 <body>
   <div class="header">
     <div class="company">
-      <span class="placeholder">[Firmenname]</span><br>
-      <span class="placeholder">[Straße, PLZ Ort]</span><br>
-      <span class="placeholder">[Telefon]</span>
+      ${profile?.name ? `<strong>${profile.name}</strong>` : '<span class="placeholder">[Firmenname]</span>'}<br>
+      ${profile?.street ? `${profile.street}<br>${profile.zip} ${profile.city}` : '<span class="placeholder">[Straße, PLZ Ort]</span>'}<br>
+      ${profile?.phone ? profile.phone : '<span class="placeholder">[Telefon]</span>'}
+      ${profile?.email ? `<br>${profile.email}` : ''}
     </div>
     <div class="doc-meta">
       <div class="doc-type">${docType}</div>
@@ -122,15 +124,21 @@ export function buildHTMLTemplate(job: Job): string {
   ${notesSection}
 
   <div class="footer">
-    <span class="placeholder">[Firmenname] · [Adresse] · Steuernummer: [Steuernummer] · IBAN: [IBAN]</span>
+    ${profile
+      ? `${profile.name} · ${profile.street}, ${profile.zip} ${profile.city}${profile.taxNumber ? ` · Steuernummer: ${profile.taxNumber}` : ''}${profile.iban ? ` · IBAN: ${profile.iban}` : ''}${profile.bic ? ` · BIC: ${profile.bic}` : ''}`
+      : '<span class="placeholder">[Firmenname] · [Adresse] · Steuernummer: [Steuernummer] · IBAN: [IBAN]</span>'
+    }
   </div>
 </body>
 </html>`;
 }
 
-export async function generateAndSharePDF(job: Job): Promise<void> {
-  const html = buildHTMLTemplate(job);
-  const isQuote = job.status === 'draft' || job.status === 'quote_sent' || job.status === 'accepted';
+export async function generateAndSharePDF(job: Job, forceDocType?: 'quote' | 'invoice'): Promise<void> {
+  const profile = await loadProfile();
+  const html = forceDocType
+    ? buildHTMLTemplate({ ...job, status: forceDocType === 'quote' ? 'draft' : 'invoiced' }, profile)
+    : buildHTMLTemplate(job, profile);
+  const isQuote = forceDocType === 'quote' || (!forceDocType && (job.status === 'draft' || job.status === 'quote_sent' || job.status === 'accepted'));
   const docNumber = isQuote ? job.quoteNumber : job.invoiceNumber;
   const filename = docNumber ? `${docNumber}.pdf` : 'Dokument.pdf';
 

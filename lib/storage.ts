@@ -1,7 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Job } from '../types';
+import { CompanyProfile, Job } from '../types';
 
 const JOBS_KEY = 'walter:jobs';
+const PROFILE_KEY = 'walter:profile';
+
+export async function loadProfile(): Promise<CompanyProfile | null> {
+  const raw = await AsyncStorage.getItem(PROFILE_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+
+export async function saveProfile(profile: CompanyProfile): Promise<void> {
+  await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+}
 
 export async function loadJobs(): Promise<Job[]> {
   const raw = await AsyncStorage.getItem(JOBS_KEY);
