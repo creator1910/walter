@@ -144,7 +144,15 @@ export default function NewJob() {
             onPress={handleVoicePress}
             accessibilityLabel={isRecording ? 'Aufnahme stoppen' : 'Spracheingabe starten'}
           >
-            <Text style={styles.micIcon}>{isRecording ? '⏹' : '🎙'}</Text>
+            {isRecording ? (
+              <View style={styles.stopIcon} />
+            ) : (
+              <View style={styles.micIconView}>
+                <View style={styles.micCapsule} />
+                <View style={styles.micStand} />
+                <View style={styles.micBase} />
+              </View>
+            )}
           </Pressable>
         </View>
 
@@ -214,7 +222,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
   },
   micButtonPressed: { opacity: 0.8 },
-  micIcon: { fontSize: 22 },
+  stopIcon: { width: 14, height: 14, borderRadius: 2, backgroundColor: '#fff' },
+  micIconView: { alignItems: 'center' },
+  micCapsule: { width: 10, height: 16, borderRadius: 5, backgroundColor: '#007AFF', borderWidth: 0 },
+  micStand: { width: 16, height: 6, borderTopLeftRadius: 0, borderTopRightRadius: 0, borderBottomLeftRadius: 8, borderBottomRightRadius: 8, borderWidth: 2, borderTopWidth: 0, borderColor: '#007AFF', marginTop: 1 },
+  micBase: { width: 12, height: 2, backgroundColor: '#007AFF', marginTop: 1 },
   recordingHint: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   recordingDot: {
     width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF3B30',
