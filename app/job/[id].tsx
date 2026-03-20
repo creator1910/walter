@@ -30,7 +30,7 @@ const NEXT_LABEL: Partial<Record<JobStatus, string>> = {
 export default function JobDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [job, setJob] = useState<Job | null>(null);
-  const [sharingPDF, setSharingPDF] = useState(false);
+  const [sharingPDF, setSharingPDF] = useState<'quote' | 'invoice' | null>(null);
   const router = useRouter();
 
   useFocusEffect(
@@ -48,15 +48,15 @@ export default function JobDetail() {
   const nextStatus = NEXT_STATUS[job.status];
   const nextLabel = NEXT_LABEL[job.status];
 
-  async function handleSharePDF() {
+  async function handleSharePDF(docType: 'quote' | 'invoice') {
     if (!job) return;
-    setSharingPDF(true);
+    setSharingPDF(docType);
     try {
-      await generateAndSharePDF(job);
+      await generateAndSharePDF(job, docType);
     } catch (e) {
       Alert.alert('Fehler', 'PDF konnte nicht erstellt werden.');
     } finally {
-      setSharingPDF(false);
+      setSharingPDF(null);
     }
   }
 
@@ -149,13 +149,32 @@ export default function JobDetail() {
         >
           <Text style={styles.secondaryButtonText}>Bearbeiten</Text>
         </Pressable>
-        <Pressable
-          style={({ pressed }) => [styles.secondaryButton, sharingPDF && styles.buttonDisabled, pressed && styles.buttonPressed]}
-          onPress={handleSharePDF}
-          disabled={sharingPDF}
-        >
-          <Text style={styles.secondaryButtonText}>{sharingPDF ? 'PDF…' : 'PDF teilen'}</Text>
-        </Pressable>
+        {job.quoteNumber && job.invoiceNumber ? (
+          <>
+            <Pressable
+              style={({ pressed }) => [styles.secondaryButton, sharingPDF === 'quote' && styles.buttonDisabled, pressed && styles.buttonPressed]}
+              onPress={() => handleSharePDF('quote')}
+              disabled={sharingPDF !== null}
+            >
+              <Text style={styles.secondaryButtonText}>{sharingPDF === 'quote' ? 'PDF…' : 'Angebot'}</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.secondaryButton, sharingPDF === 'invoice' && styles.buttonDisabled, pressed && styles.buttonPressed]}
+              onPress={() => handleSharePDF('invoice')}
+              disabled={sharingPDF !== null}
+            >
+              <Text style={styles.secondaryButtonText}>{sharingPDF === 'invoice' ? 'PDF…' : 'Rechnung'}</Text>
+            </Pressable>
+          </>
+        ) : (
+          <Pressable
+            style={({ pressed }) => [styles.secondaryButton, sharingPDF !== null && styles.buttonDisabled, pressed && styles.buttonPressed]}
+            onPress={() => handleSharePDF(job.invoiceNumber ? 'invoice' : 'quote')}
+            disabled={sharingPDF !== null}
+          >
+            <Text style={styles.secondaryButtonText}>{sharingPDF !== null ? 'PDF…' : 'PDF teilen'}</Text>
+          </Pressable>
+        )}
       </View>
       {nextLabel && (
         <Pressable
@@ -204,7 +223,7 @@ const styles = StyleSheet.create({
   rowLabel: { fontSize: 15, color: '#6B6B6B' },
   rowValue: { fontSize: 15, color: '#1a1a1a' },
   bold: { fontWeight: '700', color: '#1a1a1a' },
-  actions: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },
   secondaryButton: {
     flex: 1, borderWidth: 1.5, borderColor: '#007AFF',
     borderRadius: 12, padding: 14, alignItems: 'center',

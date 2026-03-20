@@ -16,7 +16,8 @@
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Walter benötigt das Mikrofon, um Aufträge per Sprache zu erstellen.",
         "NSSpeechRecognitionUsageDescription": "Walter verwendet Spracherkennung, um deine Beschreibung in einen Auftrag umzuwandeln."
-      }
+      },
+      "bundleIdentifier": "com.anonymous.walter"
     },
     "android": {
       "adaptiveIcon": {
@@ -25,7 +26,11 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.anonymous.walter"
     },
     "web": {
       "favicon": "./assets/favicon.png"

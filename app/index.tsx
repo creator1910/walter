@@ -41,7 +41,11 @@ export default function JobList() {
             style={({ pressed }) => [{ padding: 8, marginRight: 4 }, pressed && { opacity: 0.5 }]}
             accessibilityLabel="Firmenprofil"
           >
-            <Text style={{ fontSize: 20 }}>⚙️</Text>
+            <View style={{ width: 22, height: 22, alignItems: 'center', justifyContent: 'center' }}>
+              <View style={{ width: 22, height: 2, backgroundColor: '#007AFF', borderRadius: 1, marginBottom: 5 }} />
+              <View style={{ width: 22, height: 2, backgroundColor: '#007AFF', borderRadius: 1, marginBottom: 5 }} />
+              <View style={{ width: 22, height: 2, backgroundColor: '#007AFF', borderRadius: 1 }} />
+            </View>
           </Pressable>
         ),
       });
