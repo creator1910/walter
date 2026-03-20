@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { calculateTotals } from '../../lib/claude';
+import { generateAndSharePDF } from '../../lib/pdf';
 import { generateDocNumber, loadJobs, saveJob } from '../../lib/storage';
 import { Job, JobStatus } from '../../types';
 
@@ -29,6 +30,7 @@ const NEXT_LABEL: Partial<Record<JobStatus, string>> = {
 export default function JobDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [job, setJob] = useState<Job | null>(null);
+  const [sharingPDF, setSharingPDF] = useState(false);
   const router = useRouter();
 
   useFocusEffect(
@@ -45,6 +47,18 @@ export default function JobDetail() {
   const { net, vat, gross } = calculateTotals(job.lineItems, job.vatRate);
   const nextStatus = NEXT_STATUS[job.status];
   const nextLabel = NEXT_LABEL[job.status];
+
+  async function handleSharePDF() {
+    if (!job) return;
+    setSharingPDF(true);
+    try {
+      await generateAndSharePDF(job);
+    } catch (e) {
+      Alert.alert('Fehler', 'PDF konnte nicht erstellt werden.');
+    } finally {
+      setSharingPDF(false);
+    }
+  }
 
   async function advanceStatus() {
     if (!job || !nextStatus) return;
@@ -127,7 +141,22 @@ export default function JobDetail() {
         </View>
       )}
 
-      {/* Action */}
+      {/* Actions */}
+      <View style={styles.actions}>
+        <Pressable
+          style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
+          onPress={() => router.push(`/job/edit/${job.id}`)}
+        >
+          <Text style={styles.secondaryButtonText}>Bearbeiten</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.secondaryButton, sharingPDF && styles.buttonDisabled, pressed && styles.buttonPressed]}
+          onPress={handleSharePDF}
+          disabled={sharingPDF}
+        >
+          <Text style={styles.secondaryButtonText}>{sharingPDF ? 'PDF…' : 'PDF teilen'}</Text>
+        </Pressable>
+      </View>
       {nextLabel && (
         <Pressable
           style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
@@ -175,6 +204,13 @@ const styles = StyleSheet.create({
   rowLabel: { fontSize: 15, color: '#6B6B6B' },
   rowValue: { fontSize: 15, color: '#1a1a1a' },
   bold: { fontWeight: '700', color: '#1a1a1a' },
+  actions: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  secondaryButton: {
+    flex: 1, borderWidth: 1.5, borderColor: '#007AFF',
+    borderRadius: 12, padding: 14, alignItems: 'center',
+  },
+  secondaryButtonText: { color: '#007AFF', fontSize: 15, fontWeight: '600' },
+  buttonDisabled: { borderColor: '#AEAEB2' },
   button: {
     backgroundColor: '#007AFF',
     borderRadius: 12,
