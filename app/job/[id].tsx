@@ -1,16 +1,19 @@
 import { useCallback, useState } from 'react';
 import {
   Alert,
+  Image,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { calculateTotals } from '../../lib/claude';
 import { generateAndSharePDF } from '../../lib/pdf';
-import { generateDocNumber, loadJobs, saveJob } from '../../lib/storage';
+import { deletePhoto, generateDocNumber, loadJobs, saveJob, savePhoto } from '../../lib/storage';
 import { Job, JobStatus } from '../../types';
 
 const NEXT_STATUS: Partial<Record<JobStatus, JobStatus>> = {
@@ -31,6 +34,7 @@ export default function JobDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [job, setJob] = useState<Job | null>(null);
   const [sharingPDF, setSharingPDF] = useState<'quote' | 'invoice' | null>(null);
+  const [lightboxUri, setLightboxUri] = useState<string | null>(null);
   const router = useRouter();
 
   useFocusEffect(
@@ -75,6 +79,39 @@ export default function JobDetail() {
     };
     await saveJob(updated);
     setJob(updated);
+  }
+
+  async function handleAddPhoto() {
+    if (!job) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+      allowsMultipleSelection: false,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    try {
+      const uri = await savePhoto(job.id, result.assets[0].uri);
+      const updated = { ...job, photos: [...(job.photos ?? []), uri] };
+      await saveJob(updated);
+      setJob(updated);
+    } catch {
+      Alert.alert('Fehler', 'Foto konnte nicht gespeichert werden.');
+    }
+  }
+
+  async function handleDeletePhoto(uri: string) {
+    if (!job) return;
+    Alert.alert('Foto löschen', 'Dieses Foto wirklich löschen?', [
+      { text: 'Abbrechen', style: 'cancel' },
+      {
+        text: 'Löschen', style: 'destructive', onPress: async () => {
+          await deletePhoto(uri);
+          const updated = { ...job, photos: (job.photos ?? []).filter(p => p !== uri) };
+          await saveJob(updated);
+          setJob(updated);
+        },
+      },
+    ]);
   }
 
   function formatCurrency(amount: number) {
@@ -140,6 +177,41 @@ export default function JobDetail() {
           <Text style={styles.description}>{job.notes}</Text>
         </View>
       )}
+
+      {/* Photos */}
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Fotos</Text>
+        <View style={styles.photoGrid}>
+          {(job.photos ?? []).map(uri => (
+            <Pressable
+              key={uri}
+              onPress={() => setLightboxUri(uri)}
+              onLongPress={() => handleDeletePhoto(uri)}
+              style={styles.photoThumb}
+            >
+              <Image source={{ uri }} style={styles.photoImage} />
+            </Pressable>
+          ))}
+          <Pressable style={styles.addPhotoButton} onPress={handleAddPhoto}>
+            <View style={styles.addPhotoIcon}>
+              <View style={styles.addPhotoH} />
+              <View style={styles.addPhotoV} />
+            </View>
+          </Pressable>
+        </View>
+        {(job.photos ?? []).length > 0 && (
+          <Text style={styles.photoHint}>Gedrückt halten zum Löschen</Text>
+        )}
+      </View>
+
+      {/* Lightbox */}
+      <Modal visible={lightboxUri !== null} transparent animationType="fade" onRequestClose={() => setLightboxUri(null)}>
+        <Pressable style={styles.lightboxBackdrop} onPress={() => setLightboxUri(null)}>
+          {lightboxUri && (
+            <Image source={{ uri: lightboxUri }} style={styles.lightboxImage} resizeMode="contain" />
+          )}
+        </Pressable>
+      </Modal>
 
       {/* Actions */}
       <View style={styles.actions}>
@@ -239,4 +311,18 @@ const styles = StyleSheet.create({
   },
   buttonPressed: { opacity: 0.85 },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  photoThumb: { width: 80, height: 80, borderRadius: 8, overflow: 'hidden' },
+  photoImage: { width: 80, height: 80 },
+  addPhotoButton: {
+    width: 80, height: 80, borderRadius: 8,
+    borderWidth: 1.5, borderColor: '#007AFF', borderStyle: 'dashed',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  addPhotoIcon: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
+  addPhotoH: { position: 'absolute', width: 24, height: 2, backgroundColor: '#007AFF', borderRadius: 1 },
+  addPhotoV: { position: 'absolute', width: 2, height: 24, backgroundColor: '#007AFF', borderRadius: 1 },
+  photoHint: { fontSize: 12, color: '#AEAEB2', marginTop: 6 },
+  lightboxBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
+  lightboxImage: { width: '100%', height: '100%' },
 });
