@@ -4,36 +4,36 @@ Items deferred from plan reviews. Pick these up after the current sprint ships.
 
 ---
 
-## P1: Company Profile / Firmenprofil
+## ~~P1: Company Profile / Firmenprofil~~ ✓ Done 2026-03-20
 
-**What:** Settings screen where the tradesperson enters their company details: name, address, IBAN, Steuernummer (tax ID), and optionally a logo. Data is saved to AsyncStorage and auto-fills PDF headers/footers.
-
-**Why:** Required for legally valid German Angebote and Rechnungen under §14 UStG. Without it, Walter's PDFs are anonymous documents, not usable for tax purposes.
-
-**Pros:** Turns Walter into a legally compliant invoicing tool. One-time setup, benefits every future job.
-
-**Cons:** Adds a settings screen and storage key. PDF template needs to be aware of whether profile is filled in.
-
-**Context:** This was the most impactful item deferred from the 2026-03-20 CEO plan review. The PDF generation feature (in-sprint) generates documents but leaves header/footer blank until this is built. The PDF template should be designed with placeholder company fields from day 1 so this slots in cleanly.
-
-**Effort:** M → with CC+gstack: S (~30 min)
-**Priority:** P1
-**Depends on:** PDF generation must ship first (provides the template to fill)
+Built: Firmenprofil screen (gear/hamburger button on job list), fields for name, address, phone, email, Steuernummer, IBAN, BIC. Auto-fills PDF headers and footers.
 
 ---
 
-## P2: Photo Attachments
+## ~~P2: Photo Attachments~~ ✓ Done 2026-03-20
 
-**What:** Add/view photos on a job detail screen. Use expo-image-picker to take or select photos (before/after work, materials, site conditions). Store as file URIs in AsyncStorage alongside the job.
+Built: Photo grid on job detail screen. expo-image-picker (library + camera), expo-file-system/legacy for storage. Tap to lightbox, long-press to delete.
 
-**Why:** Tradespeople use photos for proof of work, customer dispute resolution, and quality documentation. It's a daily workflow, not a nice-to-have.
+---
 
-**Pros:** High practical value; expo-image-picker is standard Expo. Photos could later be embedded in PDFs or shared alongside them.
+## P3: Dashboard / Übersicht
 
-**Cons:** Storage grows with photos; base64 in AsyncStorage is inefficient — should use expo-file-system for actual file storage, only URIs in AsyncStorage.
+**What:** A summary screen showing revenue by status (open quotes, outstanding invoices, paid this month), and a count of jobs per status.
 
-**Context:** Deferred from 2026-03-20 CEO review. When building this, use expo-file-system (not base64 in AsyncStorage) to store photo files. Store only the file URI in the Job object.
+**Why:** As job count grows, tradespeople need a quick financial overview without opening individual jobs.
 
-**Effort:** M → with CC+gstack: S (~20 min)
-**Priority:** P2
-**Depends on:** Nothing — can be built any time after edit flow lands
+**Effort:** M → with CC+gstack: S
+**Priority:** P3
+**Depends on:** Nothing
+
+---
+
+## P4: Kunde wiederverwenden
+
+**What:** When creating a new job, offer to pick an existing customer from previous jobs instead of re-typing name/address/phone.
+
+**Why:** Most tradespeople have repeat customers. Re-typing is friction and introduces inconsistency.
+
+**Effort:** S → with CC+gstack: XS
+**Priority:** P3
+**Depends on:** Nothing
