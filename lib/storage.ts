@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
 import { CompanyProfile, Job } from '../types';
 
 const JOBS_KEY = 'walter:jobs';
@@ -36,6 +37,31 @@ export async function deleteJob(id: string): Promise<void> {
 
 export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+const PHOTOS_DIR = `${FileSystem.documentDirectory}walter-photos/`;
+
+async function ensurePhotosDir(jobId: string): Promise<string> {
+  const dir = `${PHOTOS_DIR}${jobId}/`;
+  await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+  return dir;
+}
+
+export async function savePhoto(jobId: string, sourceUri: string): Promise<string> {
+  const dir = await ensurePhotosDir(jobId);
+  const ext = sourceUri.split('.').pop()?.split('?')[0] ?? 'jpg';
+  const filename = `${Date.now()}.${ext}`;
+  const dest = `${dir}${filename}`;
+  await FileSystem.copyAsync({ from: sourceUri, to: dest });
+  return dest;
+}
+
+export async function deletePhoto(uri: string): Promise<void> {
+  try {
+    await FileSystem.deleteAsync(uri, { idempotent: true });
+  } catch {
+    // ignore — file may already be gone
+  }
 }
 
 export function generateDocNumber(prefix: 'AN' | 'RE', jobs: Job[]): string {

@@ -39,4 +39,5 @@ export interface Job {
   invoiceNumber?: string;
   quoteDate?: string;
   invoiceDate?: string;
+  photos?: string[]; // local file URIs in app document directory
 }

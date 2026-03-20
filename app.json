@@ -15,7 +15,9 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Walter benötigt das Mikrofon, um Aufträge per Sprache zu erstellen.",
-        "NSSpeechRecognitionUsageDescription": "Walter verwendet Spracherkennung, um deine Beschreibung in einen Auftrag umzuwandeln."
+        "NSSpeechRecognitionUsageDescription": "Walter verwendet Spracherkennung, um deine Beschreibung in einen Auftrag umzuwandeln.",
+        "NSPhotoLibraryUsageDescription": "Walter speichert Fotos zu deinen Aufträgen.",
+        "NSCameraUsageDescription": "Walter verwendet die Kamera, um Fotos zu Aufträgen hinzuzufügen."
       },
       "bundleIdentifier": "com.anonymous.walter"
     },
@@ -39,7 +41,8 @@
     "newArchEnabled": true,
     "plugins": [
       "expo-router",
-      "expo-speech-recognition"
+      "expo-speech-recognition",
+      "expo-image-picker"
     ]
   }
 }
