@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   tabLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: 'DMSans_400Regular',
   },
   centerButton: {

@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   tileLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: 'DMSans_400Regular',
     color: C.textDim,
   },
