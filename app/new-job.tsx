@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   scroll: { padding: 20, gap: 12 },
   label: { fontSize: 17, fontFamily: 'DMSans_600SemiBold', color: C.text },
-  hint: { fontSize: 14, fontFamily: 'DMSans_400Regular', color: C.textMid, lineHeight: 20 },
+  hint: { fontSize: 15, fontFamily: 'DMSans_400Regular', color: C.textMid, lineHeight: 21 },
   inputRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   input: {
     flex: 1,
