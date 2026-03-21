@@ -427,9 +427,9 @@ const styles = StyleSheet.create({
   dotDone: { backgroundColor: '#3D9B6B' },
   dotCurrent: { backgroundColor: '#E8A030' },
   dotFuture: { borderWidth: 1.5, borderColor: '#3A3A3A' },
-  dotDate: { fontSize: 10, fontFamily: 'DMSans_500Medium', color: '#8A8A8A' },
-  dotDatePlaceholder: { height: 13 }, // same height as dotDate text line
-  dotLabel: { fontSize: 9, fontFamily: 'DMSans_400Regular', color: '#4A4A4A' },
+  dotDate: { fontSize: 11, fontFamily: 'DMSans_500Medium', color: '#8A8A8A' },
+  dotDatePlaceholder: { height: 14 }, // same height as dotDate text line
+  dotLabel: { fontSize: 10, fontFamily: 'DMSans_400Regular', color: '#4A4A4A' },
 
   // Scroll
   scroll: { flex: 1 },
