@@ -30,11 +30,11 @@ export default function RootLayout() {
           headerShadowVisible: false,
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'Walter' }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="jobs" options={{ title: 'Alle Aufträge' }} />
         <Stack.Screen name="new-job" options={{ title: 'Neuer Auftrag', presentation: 'modal' }} />
         <Stack.Screen name="job/[id]" options={{ title: 'Auftrag' }} />
         <Stack.Screen name="job/edit/[id]" options={{ title: 'Bearbeiten' }} />
-        <Stack.Screen name="profile" options={{ title: 'Firmenprofil', presentation: 'modal' }} />
       </Stack>
     </>
   );

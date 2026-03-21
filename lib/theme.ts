@@ -1,3 +1,7 @@
+import { JobStatus } from '../types';
+
+export const ACTIVE_STATUSES = new Set<JobStatus>(['accepted', 'invoiced']);
+
 export const C = {
   bg:       '#111111',
   surface:  '#1C1C1C',

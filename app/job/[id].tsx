@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Modal,
@@ -31,10 +32,34 @@ const NEXT_LABEL: Partial<Record<JobStatus, string>> = {
   invoiced: 'Als bezahlt markieren',
 };
 
+function formatJobDate(isoString: string): string {
+  return new Date(isoString).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
+}
+
+const DOT_STAGES: Array<{ key: keyof typeof STAGE_DATE_MAP; label: string }> = [
+  { key: 'draft',      label: 'Entwurf' },
+  { key: 'quote_sent', label: 'Angebot' },
+  { key: 'accepted',   label: 'Angenom.' },
+  { key: 'invoiced',   label: 'Rechnung' },
+  { key: 'paid',       label: 'Bezahlt' },
+];
+
+const STAGE_ORDER: JobStatus[] = ['draft', 'quote_sent', 'accepted', 'invoiced', 'paid'];
+
+// Keys map each stage to the Job field that records when it was reached
+const STAGE_DATE_MAP = {
+  draft:      'createdAt',
+  quote_sent: 'quoteDate',
+  accepted:   'acceptedAt',
+  invoiced:   'invoiceDate',
+  paid:       'paidAt',
+} as const;
+
 export default function JobDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [job, setJob] = useState<Job | null>(null);
   const [sharingPDF, setSharingPDF] = useState<'quote' | 'invoice' | null>(null);
+  const [advancingStatus, setAdvancingStatus] = useState(false);
   const [lightboxUri, setLightboxUri] = useState<string | null>(null);
   const router = useRouter();
 
@@ -66,20 +91,46 @@ export default function JobDetail() {
   }
 
   async function advanceStatus() {
-    if (!job || !nextStatus) return;
-    const jobs = await loadJobs();
-    const updated: Job = {
-      ...job,
-      status: nextStatus,
-      ...(nextStatus === 'quote_sent' && !job.quoteNumber
-        ? { quoteNumber: generateDocNumber('AN', jobs), quoteDate: new Date().toISOString() }
-        : {}),
-      ...(nextStatus === 'invoiced' && !job.invoiceNumber
-        ? { invoiceNumber: generateDocNumber('RE', jobs), invoiceDate: new Date().toISOString() }
-        : {}),
-    };
-    await saveJob(updated);
-    setJob(updated);
+    if (!job || !nextStatus || advancingStatus) return;
+    setAdvancingStatus(true);
+    try {
+      const jobs = await loadJobs();
+      const now = new Date().toISOString();
+      const updated: Job = {
+        ...job,
+        status: nextStatus,
+        ...(nextStatus === 'quote_sent' && !job.quoteNumber
+          ? { quoteNumber: generateDocNumber('AN', jobs), quoteDate: now }
+          : {}),
+        ...(nextStatus === 'accepted'
+          ? { acceptedAt: now }
+          : {}),
+        ...(nextStatus === 'invoiced' && !job.invoiceNumber
+          ? { invoiceNumber: generateDocNumber('RE', jobs), invoiceDate: now }
+          : {}),
+        ...(nextStatus === 'paid'
+          ? { paidAt: now }
+          : {}),
+      };
+      await saveJob(updated);
+      setJob(updated);
+
+      if (nextStatus === 'quote_sent') {
+        try {
+          await generateAndSharePDF(updated, 'quote');
+        } catch {
+          Alert.alert('Fehler', 'PDF konnte nicht erstellt werden.');
+        }
+      } else if (nextStatus === 'invoiced') {
+        try {
+          await generateAndSharePDF(updated, 'invoice');
+        } catch {
+          Alert.alert('Fehler', 'PDF konnte nicht erstellt werden.');
+        }
+      }
+    } finally {
+      setAdvancingStatus(false);
+    }
   }
 
   async function handleAddPhoto() {
@@ -130,6 +181,33 @@ export default function JobDetail() {
           <Text style={[styles.heroBadgeText, { color: STATUS_TEXT[job.status] }]}>
             {STATUS_LABEL[job.status]}
           </Text>
+        </View>
+        {/* Progress dots row */}
+        <View style={styles.dotsRow}>
+          {DOT_STAGES.map(({ key, label }) => {
+            const currentIndex = STAGE_ORDER.indexOf(job.status);
+            const stageIndex = STAGE_ORDER.indexOf(key);
+            const isDone = stageIndex < currentIndex;
+            const isCurrent = stageIndex === currentIndex;
+            const dateField = STAGE_DATE_MAP[key];
+            const dateValue = job[dateField as keyof Job] as string | undefined;
+            return (
+              <View key={key} style={styles.dotColumn}>
+                <View style={[
+                  styles.dot,
+                  isDone && styles.dotDone,
+                  isCurrent && styles.dotCurrent,
+                  !isDone && !isCurrent && styles.dotFuture,
+                ]} />
+                {dateValue ? (
+                  <Text style={styles.dotDate}>{formatJobDate(dateValue)}</Text>
+                ) : (
+                  <View style={styles.dotDatePlaceholder} />
+                )}
+                <Text style={styles.dotLabel}>{label}</Text>
+              </View>
+            );
+          })}
         </View>
       </View>
 
@@ -267,10 +345,24 @@ export default function JobDetail() {
 
         {nextLabel && (
           <Pressable
-            style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              (advancingStatus || sharingPDF !== null) && styles.buttonDisabled,
+              pressed && !(advancingStatus || sharingPDF !== null) && styles.buttonPressed,
+            ]}
             onPress={advanceStatus}
+            disabled={advancingStatus || sharingPDF !== null}
           >
-            <Text style={styles.primaryButtonText}>{nextLabel}</Text>
+            {advancingStatus ? (
+              <ActivityIndicator color="#111111" />
+            ) : (
+              <>
+                <Text style={styles.primaryButtonText}>{nextLabel}</Text>
+                {(job.status === 'draft' || job.status === 'accepted') && (
+                  <Text style={styles.primaryButtonSubLabel}>PDF wird automatisch geteilt</Text>
+                )}
+              </>
+            )}
           </Pressable>
         )}
       </View>
@@ -320,6 +412,22 @@ const styles = StyleSheet.create({
   },
   heroBadgeDot: { width: 6, height: 6, borderRadius: 3 },
   heroBadgeText: { fontSize: 12, fontFamily: 'DMSans_500Medium' },
+
+  // Progress dots row
+  dotsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginTop: 8,
+  },
+  dotColumn: { alignItems: 'center', gap: 3 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  dotDone: { backgroundColor: '#3D9B6B' },
+  dotCurrent: { backgroundColor: '#E8A030' },
+  dotFuture: { borderWidth: 1.5, borderColor: '#3A3A3A' },
+  dotDate: { fontSize: 10, fontFamily: 'DMSans_500Medium', color: '#8A8A8A' },
+  dotDatePlaceholder: { height: 13 }, // same height as dotDate text line
+  dotLabel: { fontSize: 9, fontFamily: 'DMSans_400Regular', color: '#4A4A4A' },
 
   // Scroll
   scroll: { flex: 1 },
@@ -402,6 +510,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   primaryButtonText: { color: '#111111', fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
+  primaryButtonSubLabel: { color: 'rgba(17,17,17,0.65)', fontSize: 11, fontFamily: 'DMSans_400Regular', marginTop: 2 },
   buttonDisabled: { opacity: 0.4 },
   buttonPressed: { opacity: 0.85 },
 });

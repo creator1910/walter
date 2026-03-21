@@ -6,37 +6,19 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { loadJobs } from '../lib/storage';
-import { C, STATUS_BG, STATUS_LABEL, STATUS_TEXT } from '../lib/theme';
-import { Job, JobStatus } from '../types';
-
-const ACTIVE_STATUSES = new Set<JobStatus>(['accepted', 'invoiced']);
+import { ACTIVE_STATUSES, C, STATUS_BG, STATUS_LABEL, STATUS_TEXT } from '../lib/theme';
+import { Job } from '../types';
 
 export default function JobList() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const router = useRouter();
-  const navigation = useNavigation();
 
   useFocusEffect(
     useCallback(() => {
       loadJobs().then(setJobs);
-      navigation.setOptions({
-        headerRight: () => (
-          <Pressable
-            onPress={() => router.push('/profile')}
-            style={({ pressed }) => [{ padding: 8, marginRight: 4 }, pressed && { opacity: 0.5 }]}
-            accessibilityLabel="Firmenprofil"
-          >
-            <View style={{ width: 22, height: 22, alignItems: 'center', justifyContent: 'center' }}>
-              <View style={{ width: 22, height: 2, backgroundColor: C.amber, borderRadius: 1, marginBottom: 5 }} />
-              <View style={{ width: 22, height: 2, backgroundColor: C.amber, borderRadius: 1, marginBottom: 5 }} />
-              <View style={{ width: 22, height: 2, backgroundColor: C.amber, borderRadius: 1 }} />
-            </View>
-          </Pressable>
-        ),
-      });
-    }, [navigation, router])
+    }, [])
   );
 
   return (

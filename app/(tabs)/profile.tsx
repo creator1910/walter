@@ -10,10 +10,10 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { loadProfile, saveProfile } from '../lib/storage';
-import { C } from '../lib/theme';
-import { CompanyProfile } from '../types';
+import { useFocusEffect } from 'expo-router';
+import { loadProfile, saveProfile } from '../../lib/storage';
+import { C } from '../../lib/theme';
+import { CompanyProfile } from '../../types';
 
 const EMPTY: CompanyProfile = {
   name: '',
@@ -30,7 +30,6 @@ const EMPTY: CompanyProfile = {
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<CompanyProfile>(EMPTY);
   const [saving, setSaving] = useState(false);
-  const router = useRouter();
 
   useFocusEffect(
     useCallback(() => {
@@ -52,7 +51,7 @@ export default function ProfileScreen() {
     setSaving(true);
     try {
       await saveProfile(profile);
-      router.back();
+      Alert.alert('Gespeichert', 'Firmenprofil wurde gespeichert.');
     } catch {
       Alert.alert('Fehler', 'Profil konnte nicht gespeichert werden.');
     } finally {

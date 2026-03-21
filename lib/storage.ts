@@ -35,6 +35,13 @@ export async function deleteJob(id: string): Promise<void> {
   await AsyncStorage.setItem(JOBS_KEY, JSON.stringify(jobs.filter(j => j.id !== id)));
 }
 
+export function isThisMonth(isoString?: string): boolean {
+  if (!isoString) return false;
+  const d = new Date(isoString);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+}
+
 export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
