@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import JobForm, { JobFormValues, jobToFormValues } from '../../../components/JobForm';
 import { loadJobs, saveJob } from '../../../lib/storage';
 import { C } from '../../../lib/theme';
@@ -14,6 +15,7 @@ export default function EditJob() {
   const [values, setValues] = useState<JobFormValues | null>(null);
   const [saving, setSaving] = useState(false);
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   useFocusEffect(
     useCallback(() => {
@@ -74,7 +76,7 @@ export default function EditJob() {
     <>
       <JobForm values={values} onChange={setValues} />
       <Pressable
-        style={({ pressed }) => [styles.saveBtn, saving && styles.saveBtnDisabled, pressed && styles.saveBtnPressed]}
+        style={({ pressed }) => [styles.saveBtn, { bottom: insets.bottom + 16 }, saving && styles.saveBtnDisabled, pressed && styles.saveBtnPressed]}
         onPress={handleSave}
         disabled={saving}
       >
@@ -87,7 +89,7 @@ export default function EditJob() {
 const styles = StyleSheet.create({
   saveBtn: {
     position: 'absolute',
-    bottom: 32,
+    bottom: 16, // overridden inline with insets.bottom + 16
     left: 16,
     right: 16,
     backgroundColor: C.amber,
