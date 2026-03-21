@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   addBtn: {
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.amber,
-    borderRadius: 10,
+    borderRadius: 14,
     padding: 12,
     alignItems: 'center',
   },
