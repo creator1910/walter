@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { calculateTotals } from '../../lib/claude';
 import { generateAndSharePDF } from '../../lib/pdf';
 import { deletePhoto, generateDocNumber, loadJobs, saveJob, savePhoto } from '../../lib/storage';
@@ -62,6 +63,7 @@ export default function JobDetail() {
   const [advancingStatus, setAdvancingStatus] = useState(false);
   const [lightboxUri, setLightboxUri] = useState<string | null>(null);
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   useFocusEffect(
     useCallback(() => {
@@ -306,7 +308,7 @@ export default function JobDetail() {
       </Modal>
 
       {/* Fixed bottom bar */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 16 }]}>
         <View style={styles.secondaryRow}>
           <Pressable
             style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
