@@ -1,0 +1,10 @@
+{
+  "name": "liquid-glass",
+  "version": "1.0.0",
+  "description": "Native iOS Liquid Glass effect using SwiftUI .glassEffect()",
+  "main": "index.ts",
+  "private": true,
+  "peerDependencies": {
+    "expo": "*"
+  }
+}
