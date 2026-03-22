@@ -125,8 +125,7 @@ export default function NewJob() {
         {/* Pill input container with inset mic button */}
         <View style={[
           styles.pillContainer,
-          { backgroundColor: t.surface_card },
-          isRecording && { borderWidth: 1, borderColor: t.error },
+          { backgroundColor: isRecording ? t.surface_high : t.surface_card },
         ]}>
           <TextInput
             style={[styles.input, { color: t.on_surface }]}
@@ -149,7 +148,7 @@ export default function NewJob() {
             accessibilityLabel={isRecording ? 'Aufnahme stoppen' : 'Spracheingabe starten'}
           >
             {isRecording ? (
-              <View style={styles.stopIcon} />
+              <View style={[styles.stopIcon, { backgroundColor: t.on_primary }]} />
             ) : (
               <View style={styles.micIconView}>
                 <View style={[styles.micCapsule, { backgroundColor: t.on_surface_variant }]} />
@@ -194,7 +193,7 @@ const styles = StyleSheet.create({
   hint: { fontSize: 15, fontFamily: F.body, lineHeight: 21 },
 
   pillContainer: {
-    borderRadius: 24,
+    borderRadius: 20,
     minHeight: 160,
   },
   input: {
@@ -217,7 +216,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   micButtonPressed: { opacity: 0.8 },
-  stopIcon: { width: 14, height: 14, borderRadius: 2, backgroundColor: '#fff' },
+  stopIcon: { width: 14, height: 14, borderRadius: 2 },
   micIconView: { alignItems: 'center' },
   micCapsule: { width: 10, height: 16, borderRadius: 5 },
   micStand: {
