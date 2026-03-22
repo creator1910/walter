@@ -26,6 +26,14 @@ export interface LineItem {
   unit: string; // e.g. "Std.", "m²", "Stück"
 }
 
+export interface AnalysisPreview {
+  job: Partial<Job>;
+  analysis: {
+    erkannt: string;
+    confidence: 'hoch' | 'mittel' | 'niedrig';
+  };
+}
+
 export interface Job {
   id: string;
   createdAt: string;

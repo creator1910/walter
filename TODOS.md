@@ -28,17 +28,9 @@ Built: Photo grid on job detail screen. expo-image-picker (library + camera), ex
 
 ---
 
-## P4: Shared JobCard component
+## ~~P4: Shared JobCard component~~ ✓ Done 2026-03-22
 
-**What:** Extract a shared `<JobCard>` component from the inline card rendering in `app/jobs.tsx` and `app/(tabs)/index.tsx`.
-
-**Why:** Both the dashboard (active jobs section) and the full jobs list render job cards with the same structure: customer name, status badge, amber left border for active jobs. Currently inline in both files — can drift if one changes styling.
-
-**Pros:** Single source of truth for job card styling; change once, applies everywhere.
-**Cons:** Minor abstraction overhead; cards are currently simple enough that drift is low risk.
-**Context:** After the tab nav + dashboard ships, there will be two separate card renderers. This TODO is a follow-up cleanup once the app stabilizes.
-**Depends on:** Tab nav + dashboard (P3) ships first.
-**Priority:** P4
+Built: `components/JobCard.tsx` — shared card with photo background (0.13 opacity, bleeding in from right with L→R gradient wipe at 65%), normalised to show amount in both dashboard and jobs list.
 
 ---
 
@@ -53,6 +45,36 @@ Built: Photo grid on job detail screen. expo-image-picker (library + camera), ex
 **Context:** Added during the 2026-03-21 redesign (icon row feature). Inline drawing is fine for now — refactor when a 3rd screen needs its own set of icons.
 **Depends on:** Icon row feature ships first.
 **Priority:** P5
+
+---
+
+## P3: Offline / no-network handling for photo analysis
+
+**What:** When the user taps "Analysieren" without a network connection, detect the offline state before calling the Claude API and show a meaningful message instead of a generic error.
+
+**Why:** The target user is a tradesperson at a Baustelle — construction sites frequently have spotty signal. Today a network error looks the same as any other error. The ideal behavior is to detect offline state, save the photos + text locally, and offer to retry automatically when connectivity returns.
+
+**Pros:** Dramatically improves reliability in the core use case (on-site job creation).
+**Cons:** Requires `@react-native-community/netinfo` or equivalent; adds state for "pending analysis" jobs.
+**Context:** Added during /plan-eng-review of Photo + Voice feature (2026-03-22). Currently the fetch throws on network failure and the generic retry button appears — acceptable for v1 but a real pain point for the target user. Consider pairing with a "save draft" feature.
+**Effort:** M → with CC+gstack: S
+**Priority:** P3
+**Depends on:** Photo + Voice feature ships first.
+
+---
+
+## P4: Vision API cost tracking
+
+**What:** Track how often the vision API ("Analysieren") is called and roughly what it costs. Optionally surface in Settings.
+
+**Why:** Vision API calls with 3 photos cost significantly more than text-only job creation. For a solo tool the cost is absorbed, but awareness is useful as usage grows.
+
+**Pros:** Surfaces unexpected cost spikes; allows future rate-limiting or user awareness.
+**Cons:** Adds local tracking state; marginal value for a solo tool.
+**Context:** Open Question #2 from Photo + Voice design doc (2026-03-22). Captured as P4 — low priority, worth revisiting if API costs become noticeable.
+**Effort:** S → with CC+gstack: XS
+**Priority:** P4
+**Depends on:** Photo + Voice feature ships first.
 
 ---
 

@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { FileText, MoreHorizontal, Pencil, Plus, Share2 } from 'lucide-react-native';
 import {
   ActivityIndicator,
   Alert,
@@ -55,49 +56,6 @@ const STAGE_DATE_MAP = {
   paid:       'paidAt',
 } as const;
 
-// --- Drawn icons ---
-
-function PdfIcon({ color }: { color: string }) {
-  return (
-    <View style={{ width: 16, height: 20, borderWidth: 1.5, borderColor: color, borderRadius: 2, alignItems: 'center', justifyContent: 'center', gap: 3, paddingVertical: 4 }}>
-      <View style={{ width: 9, height: 1.5, backgroundColor: color, borderRadius: 1 }} />
-      <View style={{ width: 9, height: 1.5, backgroundColor: color, borderRadius: 1 }} />
-      <View style={{ width: 6, height: 1.5, backgroundColor: color, borderRadius: 1 }} />
-    </View>
-  );
-}
-
-function EditIcon({ color }: { color: string }) {
-  return (
-    <View style={{ width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}>
-      <View style={{ width: 2.5, height: 14, backgroundColor: color, borderRadius: 1.5, transform: [{ rotate: '-45deg' }] }} />
-      <View style={{ position: 'absolute', width: 8, height: 2.5, backgroundColor: color, borderRadius: 1, bottom: 1, left: 0 }} />
-    </View>
-  );
-}
-
-function ShareIcon({ color }: { color: string }) {
-  return (
-    <View style={{ width: 20, height: 20, alignItems: 'center' }}>
-      <View style={{ width: 2, height: 10, backgroundColor: color, borderRadius: 1, marginTop: 2 }} />
-      <View style={{ position: 'absolute', width: 2, height: 7, backgroundColor: color, borderRadius: 1, top: 0, left: 7, transform: [{ rotate: '-40deg' }] }} />
-      <View style={{ position: 'absolute', width: 2, height: 7, backgroundColor: color, borderRadius: 1, top: 0, right: 7, transform: [{ rotate: '40deg' }] }} />
-      <View style={{ position: 'absolute', width: 14, height: 2, backgroundColor: color, borderRadius: 1, bottom: 0 }} />
-      <View style={{ position: 'absolute', width: 2, height: 5, backgroundColor: color, borderRadius: 1, bottom: 0, left: 3 }} />
-      <View style={{ position: 'absolute', width: 2, height: 5, backgroundColor: color, borderRadius: 1, bottom: 0, right: 3 }} />
-    </View>
-  );
-}
-
-function MehrIcon({ color }: { color: string }) {
-  return (
-    <View style={{ width: 20, height: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-      <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: color }} />
-      <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: color }} />
-      <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: color }} />
-    </View>
-  );
-}
 
 function IconAction({
   icon, label, onPress, loading, t,
@@ -276,50 +234,52 @@ export default function JobDetail() {
     <View style={[styles.container, { backgroundColor: t.surface }]}>
       {/* Hero block */}
       <View style={[styles.hero, { backgroundColor: t.surface_card }]}>
-        <Text style={[styles.heroLabel, { color: t.outline }]}>GESAMTBETRAG INKL. MWST.</Text>
-        <Text style={[styles.heroAmount, { color: t.on_surface }]}>{formatCurrency(gross)}</Text>
-        <View style={[styles.heroBadge, { backgroundColor: sc.bg }]}>
-          <View style={[styles.heroBadgeDot, { backgroundColor: sc.text }]} />
-          <Text style={[styles.heroBadgeText, { color: sc.text }]}>
-            {STATUS_LABEL[job.status]}
-          </Text>
+        {/* Amount + status on one row */}
+        <View style={styles.heroRow}>
+          <Text style={[styles.heroAmount, { color: t.on_surface }]}>{formatCurrency(gross)}</Text>
+          <View style={[styles.heroBadge, { backgroundColor: sc.bg }]}>
+            <View style={[styles.heroBadgeDot, { backgroundColor: sc.text }]} />
+            <Text style={[styles.heroBadgeText, { color: sc.text }]}>{STATUS_LABEL[job.status]}</Text>
+          </View>
         </View>
 
-        {/* Progress dots */}
-        <View style={styles.dotsRow}>
-          {DOT_STAGES.map(({ key, label }) => {
-            const currentIndex = STAGE_ORDER.indexOf(job.status);
-            const stageIndex = STAGE_ORDER.indexOf(key);
-            const isDone = stageIndex < currentIndex;
-            const isCurrent = stageIndex === currentIndex;
-            const dateField = STAGE_DATE_MAP[key];
-            const dateValue = job[dateField as keyof Job] as string | undefined;
-            return (
-              <View key={key} style={styles.dotColumn}>
-                <View style={[
-                  styles.dot,
-                  isDone && { backgroundColor: t.dot_done },
-                  isCurrent && { backgroundColor: t.dot_current },
-                  !isDone && !isCurrent && { borderWidth: 1.5, borderColor: t.dot_future },
-                ]} />
-                {dateValue ? (
-                  <Text style={[styles.dotDate, { color: t.on_surface_variant }]}>{formatJobDate(dateValue)}</Text>
-                ) : (
-                  <View style={styles.dotDatePlaceholder} />
-                )}
-                <Text style={[styles.dotLabel, { color: t.outline }]}>{label}</Text>
-              </View>
-            );
-          })}
+        {/* Compact stepper */}
+        <View style={styles.stepper}>
+          <View style={[styles.stepperLine, { backgroundColor: t.outline_variant }]} />
+          <View style={styles.stepperRow}>
+            {DOT_STAGES.map(({ key, label }) => {
+              const currentIndex = STAGE_ORDER.indexOf(job.status);
+              const stageIndex = STAGE_ORDER.indexOf(key);
+              const isDone = stageIndex < currentIndex;
+              const isCurrent = stageIndex === currentIndex;
+              const dateField = STAGE_DATE_MAP[key];
+              const dateValue = job[dateField as keyof Job] as string | undefined;
+              return (
+                <View key={key} style={styles.stepCol}>
+                  <View style={[
+                    styles.stepDot,
+                    isDone && { backgroundColor: t.dot_done },
+                    isCurrent && { backgroundColor: t.dot_current },
+                    !isDone && !isCurrent && { borderWidth: 1.5, borderColor: t.dot_future, backgroundColor: t.surface_card },
+                  ]} />
+                  {isCurrent && dateValue
+                    ? <Text style={[styles.stepDate, { color: t.on_surface_variant }]}>{formatJobDate(dateValue)}</Text>
+                    : <View style={styles.stepDatePlaceholder} />
+                  }
+                  <Text style={[styles.stepLabel, { color: isCurrent ? t.on_surface_variant : t.outline }]} numberOfLines={1}>{label}</Text>
+                </View>
+              );
+            })}
+          </View>
         </View>
       </View>
 
       {/* Icon action row */}
       <View style={[styles.iconRow, { backgroundColor: t.surface_card }]}>
-        <IconAction icon={<PdfIcon color={t.on_surface_variant} />} label="PDF" onPress={() => handleSharePDF(job.invoiceNumber ? 'invoice' : 'quote')} loading={sharingPDF !== null} t={t} />
-        <IconAction icon={<EditIcon color={t.on_surface_variant} />} label="Bearbeiten" onPress={() => router.push(`/job/edit/${job.id}`)} t={t} />
-        <IconAction icon={<ShareIcon color={t.on_surface_variant} />} label="Teilen" onPress={() => handleSharePDF(job.quoteNumber ? 'quote' : 'invoice')} loading={sharingPDF !== null} t={t} />
-        <IconAction icon={<MehrIcon color={t.on_surface_variant} />} label="Mehr" onPress={handleMehr} t={t} />
+        <IconAction icon={<FileText size={20} color={t.on_surface_variant} strokeWidth={1.5} />} label="PDF" onPress={() => handleSharePDF(job.invoiceNumber ? 'invoice' : 'quote')} loading={sharingPDF !== null} t={t} />
+        <IconAction icon={<Pencil size={20} color={t.on_surface_variant} strokeWidth={1.5} />} label="Bearbeiten" onPress={() => router.push(`/job/edit/${job.id}`)} t={t} />
+        <IconAction icon={<Share2 size={20} color={t.on_surface_variant} strokeWidth={1.5} />} label="Teilen" onPress={() => handleSharePDF(job.quoteNumber ? 'quote' : 'invoice')} loading={sharingPDF !== null} t={t} />
+        <IconAction icon={<MoreHorizontal size={20} color={t.on_surface_variant} strokeWidth={1.5} />} label="Mehr" onPress={handleMehr} t={t} />
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
@@ -395,10 +355,7 @@ export default function JobDetail() {
               style={[styles.addPhotoButton, { borderColor: t.outline_variant }]}
               onPress={handleAddPhoto}
             >
-              <View style={styles.addPhotoIcon}>
-                <View style={[styles.addPhotoH, { backgroundColor: t.on_surface_variant }]} />
-                <View style={[styles.addPhotoV, { backgroundColor: t.on_surface_variant }]} />
-              </View>
+              <Plus size={24} color={t.on_surface_variant} strokeWidth={1.5} />
             </Pressable>
           </View>
           {(job.photos ?? []).length > 0 && (
@@ -468,22 +425,20 @@ const styles = StyleSheet.create({
   // Hero
   hero: {
     paddingHorizontal: 18,
-    paddingTop: 20,
-    paddingBottom: 20,
-    alignItems: 'flex-start',
-    gap: 6,
+    paddingTop: 14,
+    paddingBottom: 14,
+    gap: 14,
   },
-  heroLabel: {
-    fontSize: 11,
-    fontFamily: F.labelSemi,
-    textTransform: 'uppercase',
-    letterSpacing: 0.05 * 11,
+  heroRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   heroAmount: {
-    fontSize: 36,
+    fontSize: 32,
     fontFamily: F.dataBold,
     fontVariant: ['tabular-nums'],
-    letterSpacing: -1.5,
+    letterSpacing: -1,
   },
   heroBadge: {
     flexDirection: 'row',
@@ -492,42 +447,46 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 9999,
-    marginTop: 2,
   },
   heroBadgeDot: { width: 6, height: 6, borderRadius: 3 },
   heroBadgeText: { fontSize: 12, fontFamily: F.bodyMedium },
 
-  // Progress dots
-  dotsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    marginTop: 8,
+  // Compact stepper
+  stepper: { width: '100%' },
+  stepperLine: {
+    position: 'absolute',
+    top: 3.5,
+    left: 0,
+    right: 0,
+    height: StyleSheet.hairlineWidth,
   },
-  dotColumn: { alignItems: 'center', gap: 3 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  dotDate: { fontSize: 11, fontFamily: F.bodyMedium },
-  dotDatePlaceholder: { height: 14 },
-  dotLabel: { fontSize: 10, fontFamily: F.body },
+  stepperRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  stepCol: { alignItems: 'center', gap: 2, minWidth: 44 },
+  stepDot: { width: 8, height: 8, borderRadius: 4 },
+  stepDate: { fontSize: 10, fontFamily: F.bodyMedium },
+  stepDatePlaceholder: { height: 14 },
+  stepLabel: { fontSize: 9, fontFamily: F.body },
 
   // Icon row
   iconRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 16,
+    paddingVertical: 10,
   },
   iconAction: {
     alignItems: 'center',
-    minWidth: 52,
-    minHeight: 52,
+    minWidth: 48,
     justifyContent: 'center',
-    gap: 6,
+    gap: 4,
   },
   iconActionPressed: { opacity: 0.7 },
   iconActionIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -576,9 +535,6 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderStyle: 'dashed',
     alignItems: 'center', justifyContent: 'center',
   },
-  addPhotoIcon: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
-  addPhotoH: { position: 'absolute', width: 24, height: 2, borderRadius: 1 },
-  addPhotoV: { position: 'absolute', width: 2, height: 24, borderRadius: 1 },
   photoHint: { fontSize: 12, fontFamily: F.body, marginTop: 6 },
 
   // Lightbox

@@ -1,26 +1,12 @@
+import { BlurView } from 'expo-blur';
 import { Tabs, useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { LayoutGrid, Plus, User } from 'lucide-react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { F, useTheme } from '../../lib/theme';
 
-function GridIcon({ color }: { color: string }) {
-  return (
-    <View style={{ width: 20, height: 20, flexDirection: 'row', flexWrap: 'wrap', gap: 2 }}>
-      <View style={{ width: 9, height: 9, backgroundColor: color, borderRadius: 1 }} />
-      <View style={{ width: 9, height: 9, backgroundColor: color, borderRadius: 1 }} />
-      <View style={{ width: 9, height: 9, backgroundColor: color, borderRadius: 1 }} />
-      <View style={{ width: 9, height: 9, backgroundColor: color, borderRadius: 1 }} />
-    </View>
-  );
-}
-
-function PersonIcon({ color }: { color: string }) {
-  return (
-    <View style={{ width: 20, height: 20, alignItems: 'center' }}>
-      <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: color }} />
-      <View style={{ width: 18, height: 7, borderRadius: 4, backgroundColor: color, marginTop: 2 }} />
-    </View>
-  );
-}
+const TAB_BAR_HEIGHT = 60;
+const CENTER_BUTTON_SIZE = 68;
 
 function CenterTabButton() {
   const router = useRouter();
@@ -35,13 +21,15 @@ function CenterTabButton() {
       ]}
       accessibilityLabel="Neuer Auftrag"
     >
-      <Text style={[styles.centerButtonText, { color: t.on_primary }]}>+</Text>
+      <Plus size={28} color={t.on_primary} strokeWidth={2} />
     </Pressable>
   );
 }
 
 export default function TabsLayout() {
   const t = useTheme();
+  const insets = useSafeAreaInsets();
+  const tabBarBottom = Math.max(insets.bottom, 8) + 8;
 
   return (
     <Tabs
@@ -50,18 +38,23 @@ export default function TabsLayout() {
         headerTintColor: t.on_surface,
         headerTitleStyle: { fontFamily: F.headlineSemi, fontSize: 17 },
         headerShadowVisible: false,
-        tabBarStyle: [styles.tabBar, { backgroundColor: t.surface }],
+        tabBarStyle: [styles.tabBar, { bottom: tabBarBottom }],
         tabBarActiveTintColor: t.primary,
         tabBarInactiveTintColor: t.outline,
         tabBarLabelStyle: styles.tabLabel,
+        tabBarBackground: () => (
+          <View style={[StyleSheet.absoluteFill, styles.tabBarBlurClip]}>
+            <BlurView tint="systemChromeMaterial" intensity={80} style={StyleSheet.absoluteFill} />
+          </View>
+        ),
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Übersicht',
+          headerShown: false,
           tabBarLabel: 'Übersicht',
-          tabBarIcon: ({ color }) => <GridIcon color={color} />,
+          tabBarIcon: ({ color }) => <LayoutGrid size={20} color={color} strokeWidth={1.5} />,
         }}
       />
       <Tabs.Screen
@@ -75,7 +68,7 @@ export default function TabsLayout() {
         options={{
           title: 'Firmenprofil',
           tabBarLabel: 'Profil',
-          tabBarIcon: ({ color }) => <PersonIcon color={color} />,
+          tabBarIcon: ({ color }) => <User size={20} color={color} strokeWidth={1.5} />,
         }}
       />
     </Tabs>
@@ -84,25 +77,33 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
+    position: 'absolute',
+    // marginHorizontal survives React Navigation's left:0/right:0 override
+    marginHorizontal: 48,
+    height: TAB_BAR_HEIGHT,
+    borderRadius: TAB_BAR_HEIGHT / 2,
     borderTopWidth: 0,
-    overflow: 'visible',
+    overflow: 'visible', // allows + button to protrude above the bar
+    backgroundColor: 'transparent',
+  },
+  tabBarBlurClip: {
+    borderRadius: TAB_BAR_HEIGHT / 2,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(128,128,128,0.2)',
   },
   tabLabel: {
     fontSize: 11,
     fontFamily: F.body,
   },
   centerButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 9999,
+    width: CENTER_BUTTON_SIZE,
+    height: CENTER_BUTTON_SIZE,
+    borderRadius: CENTER_BUTTON_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    marginBottom: 16,
-  },
-  centerButtonText: {
-    fontSize: 30,
-    fontFamily: F.body,
-    lineHeight: 34,
+    // protrudes above the bar
+    marginTop: -(CENTER_BUTTON_SIZE - TAB_BAR_HEIGHT) / 2,
   },
 });
