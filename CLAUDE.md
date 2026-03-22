@@ -35,13 +35,18 @@ cd .claude/skills/gstack && ./setup
 
 ## Design System
 Always read DESIGN.md before making any visual or UI decisions.
-All colors, spacing, border radius, typography weights, and aesthetic direction are defined there.
+All font choices, colors, spacing, and aesthetic direction are defined there.
 Do not deviate without explicit user approval.
 In QA mode, flag any code that doesn't match DESIGN.md.
 Key reminders from DESIGN.md:
-- Dark-first: background #111111, cards #1C1C1C — NOT white or light backgrounds
-- Accent/CTA: #E8A030 amber — the only warm color, reserve for primary actions
-- Font: DM Sans at all weights
-- Gesamtbetrag: 36px bold, tabular-nums, top of detail screen (hero position)
-- No emoji icons — render as `?` boxes on simulator; use drawn View components
-- No gradients, no purple, no blue primary, no centered layouts for data screens
+- **Analytical Monolith** — editorial, monochromatic, hyper-precise
+- Light/dark mode via device settings (`useColorScheme()`)
+- Light: surface #F9F9F9, cards #FFFFFF, primary #000000
+- Dark: surface #0F0F0F, cards #141414, primary #FFFFFF
+- Fonts: Geist (display/headline) + Inter (body/label)
+- No warm accent colors — monochromatic only, status colors are the only chromatic elements
+- No 1px borders for sectioning — boundaries via background color shifts only
+- No alternating row colors — uniform card background with underline inputs
+- No emoji icons — render as `?` boxes on simulator; use drawn View components or SVG
+- No drop shadows — use tonal layering for depth
+- Amounts: Geist 700, tabular-nums, hero positioning

@@ -15,8 +15,8 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { calculateTotals } from '../../lib/claude';
 import { generateAndSharePDF } from '../../lib/pdf';
-import { deletePhoto, generateDocNumber, loadJobs, saveJob, savePhoto } from '../../lib/storage';
-import { C, STATUS_BG, STATUS_LABEL, STATUS_TEXT } from '../../lib/theme';
+import { deleteJob, deletePhoto, generateDocNumber, generateId, loadJobs, saveJob, savePhoto } from '../../lib/storage';
+import { F, statusColors, STATUS_LABEL, useTheme } from '../../lib/theme';
 import { Job, JobStatus } from '../../types';
 
 const NEXT_STATUS: Partial<Record<JobStatus, JobStatus>> = {
@@ -47,7 +47,6 @@ const DOT_STAGES: Array<{ key: keyof typeof STAGE_DATE_MAP; label: string }> = [
 
 const STAGE_ORDER: JobStatus[] = ['draft', 'quote_sent', 'accepted', 'invoiced', 'paid'];
 
-// Keys map each stage to the Job field that records when it was reached
 const STAGE_DATE_MAP = {
   draft:      'createdAt',
   quote_sent: 'quoteDate',
@@ -55,6 +54,75 @@ const STAGE_DATE_MAP = {
   invoiced:   'invoiceDate',
   paid:       'paidAt',
 } as const;
+
+// --- Drawn icons ---
+
+function PdfIcon({ color }: { color: string }) {
+  return (
+    <View style={{ width: 16, height: 20, borderWidth: 1.5, borderColor: color, borderRadius: 2, alignItems: 'center', justifyContent: 'center', gap: 3, paddingVertical: 4 }}>
+      <View style={{ width: 9, height: 1.5, backgroundColor: color, borderRadius: 1 }} />
+      <View style={{ width: 9, height: 1.5, backgroundColor: color, borderRadius: 1 }} />
+      <View style={{ width: 6, height: 1.5, backgroundColor: color, borderRadius: 1 }} />
+    </View>
+  );
+}
+
+function EditIcon({ color }: { color: string }) {
+  return (
+    <View style={{ width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: 2.5, height: 14, backgroundColor: color, borderRadius: 1.5, transform: [{ rotate: '-45deg' }] }} />
+      <View style={{ position: 'absolute', width: 8, height: 2.5, backgroundColor: color, borderRadius: 1, bottom: 1, left: 0 }} />
+    </View>
+  );
+}
+
+function ShareIcon({ color }: { color: string }) {
+  return (
+    <View style={{ width: 20, height: 20, alignItems: 'center' }}>
+      <View style={{ width: 2, height: 10, backgroundColor: color, borderRadius: 1, marginTop: 2 }} />
+      <View style={{ position: 'absolute', width: 2, height: 7, backgroundColor: color, borderRadius: 1, top: 0, left: 7, transform: [{ rotate: '-40deg' }] }} />
+      <View style={{ position: 'absolute', width: 2, height: 7, backgroundColor: color, borderRadius: 1, top: 0, right: 7, transform: [{ rotate: '40deg' }] }} />
+      <View style={{ position: 'absolute', width: 14, height: 2, backgroundColor: color, borderRadius: 1, bottom: 0 }} />
+      <View style={{ position: 'absolute', width: 2, height: 5, backgroundColor: color, borderRadius: 1, bottom: 0, left: 3 }} />
+      <View style={{ position: 'absolute', width: 2, height: 5, backgroundColor: color, borderRadius: 1, bottom: 0, right: 3 }} />
+    </View>
+  );
+}
+
+function MehrIcon({ color }: { color: string }) {
+  return (
+    <View style={{ width: 20, height: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+      <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: color }} />
+      <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: color }} />
+      <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: color }} />
+    </View>
+  );
+}
+
+function IconAction({
+  icon, label, onPress, loading, t,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onPress: () => void;
+  loading?: boolean;
+  t: ReturnType<typeof useTheme>;
+}) {
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.iconAction, pressed && styles.iconActionPressed]}
+      onPress={onPress}
+      hitSlop={8}
+    >
+      <View style={[styles.iconActionIconWrap, { backgroundColor: t.surface_high }]}>
+        {loading ? <ActivityIndicator size="small" color={t.on_surface_variant} /> : icon}
+      </View>
+      <Text style={[styles.iconActionLabel, { color: t.outline }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+// --- Main screen ---
 
 export default function JobDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -64,6 +132,7 @@ export default function JobDetail() {
   const [lightboxUri, setLightboxUri] = useState<string | null>(null);
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const t = useTheme();
 
   useFocusEffect(
     useCallback(() => {
@@ -79,13 +148,14 @@ export default function JobDetail() {
   const { net, vat, gross } = calculateTotals(job.lineItems, job.vatRate);
   const nextStatus = NEXT_STATUS[job.status];
   const nextLabel = NEXT_LABEL[job.status];
+  const sc = statusColors(t, job.status);
 
   async function handleSharePDF(docType: 'quote' | 'invoice') {
     if (!job) return;
     setSharingPDF(docType);
     try {
       await generateAndSharePDF(job, docType);
-    } catch (e) {
+    } catch {
       Alert.alert('Fehler', 'PDF konnte nicht erstellt werden.');
     } finally {
       setSharingPDF(null);
@@ -104,28 +174,18 @@ export default function JobDetail() {
         ...(nextStatus === 'quote_sent' && !job.quoteNumber
           ? { quoteNumber: generateDocNumber('AN', jobs), quoteDate: now }
           : {}),
-        ...(nextStatus === 'accepted'
-          ? { acceptedAt: now }
-          : {}),
+        ...(nextStatus === 'accepted' ? { acceptedAt: now } : {}),
         ...(nextStatus === 'invoiced' && !job.invoiceNumber
           ? { invoiceNumber: generateDocNumber('RE', jobs), invoiceDate: now }
           : {}),
-        ...(nextStatus === 'paid'
-          ? { paidAt: now }
-          : {}),
+        ...(nextStatus === 'paid' ? { paidAt: now } : {}),
       };
       await saveJob(updated);
       setJob(updated);
 
-      if (nextStatus === 'quote_sent') {
+      if (nextStatus === 'quote_sent' || nextStatus === 'invoiced') {
         try {
-          await generateAndSharePDF(updated, 'quote');
-        } catch {
-          Alert.alert('Fehler', 'PDF konnte nicht erstellt werden.');
-        }
-      } else if (nextStatus === 'invoiced') {
-        try {
-          await generateAndSharePDF(updated, 'invoice');
+          await generateAndSharePDF(updated, nextStatus === 'quote_sent' ? 'quote' : 'invoice');
         } catch {
           Alert.alert('Fehler', 'PDF konnte nicht erstellt werden.');
         }
@@ -168,23 +228,64 @@ export default function JobDetail() {
     ]);
   }
 
+  async function handleDuplicateJob() {
+    if (!job) return;
+    const newJob: Job = {
+      ...job,
+      id: generateId(),
+      createdAt: new Date().toISOString(),
+      status: 'draft',
+      quoteNumber: undefined,
+      quoteDate: undefined,
+      invoiceNumber: undefined,
+      invoiceDate: undefined,
+      acceptedAt: undefined,
+      paidAt: undefined,
+      photos: [],
+    };
+    await saveJob(newJob);
+    router.replace(`/job/${newJob.id}`);
+  }
+
+  async function handleDeleteJob() {
+    if (!job) return;
+    Alert.alert('Auftrag löschen', 'Diesen Auftrag wirklich löschen?', [
+      { text: 'Abbrechen', style: 'cancel' },
+      {
+        text: 'Löschen', style: 'destructive', onPress: async () => {
+          await deleteJob(job.id);
+          router.back();
+        },
+      },
+    ]);
+  }
+
+  function handleMehr() {
+    Alert.alert('Mehr Optionen', undefined, [
+      { text: 'Auftrag duplizieren', onPress: handleDuplicateJob },
+      { text: 'Auftrag löschen', style: 'destructive', onPress: handleDeleteJob },
+      { text: 'Abbrechen', style: 'cancel' },
+    ]);
+  }
+
   function formatCurrency(amount: number) {
     return amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
   }
 
   return (
-    <View style={styles.container}>
-      {/* Hero block — Gesamtbetrag at top */}
-      <View style={styles.hero}>
-        <Text style={styles.heroLabel}>Gesamtbetrag inkl. MwSt.</Text>
-        <Text style={styles.heroAmount}>{formatCurrency(gross)}</Text>
-        <View style={[styles.heroBadge, { backgroundColor: STATUS_BG[job.status] }]}>
-          <View style={[styles.heroBadgeDot, { backgroundColor: STATUS_TEXT[job.status] }]} />
-          <Text style={[styles.heroBadgeText, { color: STATUS_TEXT[job.status] }]}>
+    <View style={[styles.container, { backgroundColor: t.surface }]}>
+      {/* Hero block */}
+      <View style={[styles.hero, { backgroundColor: t.surface_card }]}>
+        <Text style={[styles.heroLabel, { color: t.outline }]}>GESAMTBETRAG INKL. MWST.</Text>
+        <Text style={[styles.heroAmount, { color: t.on_surface }]}>{formatCurrency(gross)}</Text>
+        <View style={[styles.heroBadge, { backgroundColor: sc.bg }]}>
+          <View style={[styles.heroBadgeDot, { backgroundColor: sc.text }]} />
+          <Text style={[styles.heroBadgeText, { color: sc.text }]}>
             {STATUS_LABEL[job.status]}
           </Text>
         </View>
-        {/* Progress dots row */}
+
+        {/* Progress dots */}
         <View style={styles.dotsRow}>
           {DOT_STAGES.map(({ key, label }) => {
             const currentIndex = STAGE_ORDER.indexOf(job.status);
@@ -197,80 +298,88 @@ export default function JobDetail() {
               <View key={key} style={styles.dotColumn}>
                 <View style={[
                   styles.dot,
-                  isDone && styles.dotDone,
-                  isCurrent && styles.dotCurrent,
-                  !isDone && !isCurrent && styles.dotFuture,
+                  isDone && { backgroundColor: t.dot_done },
+                  isCurrent && { backgroundColor: t.dot_current },
+                  !isDone && !isCurrent && { borderWidth: 1.5, borderColor: t.dot_future },
                 ]} />
                 {dateValue ? (
-                  <Text style={styles.dotDate}>{formatJobDate(dateValue)}</Text>
+                  <Text style={[styles.dotDate, { color: t.on_surface_variant }]}>{formatJobDate(dateValue)}</Text>
                 ) : (
                   <View style={styles.dotDatePlaceholder} />
                 )}
-                <Text style={styles.dotLabel}>{label}</Text>
+                <Text style={[styles.dotLabel, { color: t.outline }]}>{label}</Text>
               </View>
             );
           })}
         </View>
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      {/* Icon action row */}
+      <View style={[styles.iconRow, { backgroundColor: t.surface_card }]}>
+        <IconAction icon={<PdfIcon color={t.on_surface_variant} />} label="PDF" onPress={() => handleSharePDF(job.invoiceNumber ? 'invoice' : 'quote')} loading={sharingPDF !== null} t={t} />
+        <IconAction icon={<EditIcon color={t.on_surface_variant} />} label="Bearbeiten" onPress={() => router.push(`/job/edit/${job.id}`)} t={t} />
+        <IconAction icon={<ShareIcon color={t.on_surface_variant} />} label="Teilen" onPress={() => handleSharePDF(job.quoteNumber ? 'quote' : 'invoice')} loading={sharingPDF !== null} t={t} />
+        <IconAction icon={<MehrIcon color={t.on_surface_variant} />} label="Mehr" onPress={handleMehr} t={t} />
+      </View>
+
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         {/* Customer */}
-        <View style={styles.card}>
-          <Text style={styles.customerName}>{job.customer.name || '—'}</Text>
-          {job.customer.address && <Text style={styles.meta}>{job.customer.address}</Text>}
-          {job.customer.phone && <Text style={styles.meta}>{job.customer.phone}</Text>}
-          {job.customer.email && <Text style={styles.meta}>{job.customer.email}</Text>}
+        <View style={[styles.card, { backgroundColor: t.surface_card }]}>
+          <Text style={[styles.customerName, { color: t.on_surface }]}>{job.customer.name || '—'}</Text>
+          {job.customer.address && <Text style={[styles.meta, { color: t.on_surface_variant }]}>{job.customer.address}</Text>}
+          {job.customer.phone && <Text style={[styles.meta, { color: t.on_surface_variant }]}>{job.customer.phone}</Text>}
+          {job.customer.email && <Text style={[styles.meta, { color: t.on_surface_variant }]}>{job.customer.email}</Text>}
         </View>
 
         {/* Document numbers */}
         {(job.quoteNumber || job.invoiceNumber) && (
-          <View style={styles.card}>
-            {job.quoteNumber && <Row label="Angebotsnr." value={job.quoteNumber} />}
-            {job.invoiceNumber && <Row label="Rechnungsnr." value={job.invoiceNumber} />}
+          <View style={[styles.card, { backgroundColor: t.surface_card }]}>
+            {job.quoteNumber && <Row label="Angebotsnr." value={job.quoteNumber} t={t} />}
+            {job.invoiceNumber && <Row label="Rechnungsnr." value={job.invoiceNumber} t={t} />}
           </View>
         )}
 
         {/* Description */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Leistungsbeschreibung</Text>
-          <Text style={styles.description}>{job.description}</Text>
+        <View style={[styles.card, { backgroundColor: t.surface_card }]}>
+          <Text style={[styles.sectionTitle, { color: t.outline }]}>LEISTUNGSBESCHREIBUNG</Text>
+          <Text style={[styles.description, { color: t.on_surface }]}>{job.description}</Text>
         </View>
 
         {/* Line items */}
         {job.lineItems.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Positionen</Text>
+          <View style={[styles.card, { backgroundColor: t.surface_card }]}>
+            <Text style={[styles.sectionTitle, { color: t.outline }]}>POSITIONEN</Text>
             {job.lineItems.map((item, i) => (
               <View key={i} style={styles.lineItem}>
                 <View style={styles.lineItemLeft}>
-                  <Text style={styles.lineItemDesc}>{item.description}</Text>
-                  <Text style={styles.lineItemQty}>
+                  <Text style={[styles.lineItemDesc, { color: t.on_surface }]}>{item.description}</Text>
+                  <Text style={[styles.lineItemQty, { color: t.on_surface_variant }]}>
                     {item.quantity} {item.unit} × {formatCurrency(item.unitPrice)}
                   </Text>
                 </View>
-                <Text style={styles.lineItemTotal}>
+                <Text style={[styles.lineItemTotal, { color: t.on_surface }]}>
                   {formatCurrency(item.quantity * item.unitPrice)}
                 </Text>
               </View>
             ))}
-            <View style={styles.divider} />
-            <Row label="Netto" value={formatCurrency(net)} />
-            <Row label={`MwSt. ${job.vatRate * 100}%`} value={formatCurrency(vat)} />
-            <Row label="Gesamt" value={formatCurrency(gross)} bold />
+            <View style={{ height: 24 }} />
+            <Row label="Netto" value={formatCurrency(net)} t={t} />
+            <Row label={`MwSt. ${job.vatRate * 100}%`} value={formatCurrency(vat)} t={t} />
+            <Row label="Gesamt" value={formatCurrency(gross)} bold t={t} />
           </View>
         )}
 
         {/* Notes */}
         {job.notes && (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Hinweise</Text>
-            <Text style={styles.description}>{job.notes}</Text>
+          <View style={[styles.card, { backgroundColor: t.surface_card }]}>
+            <Text style={[styles.sectionTitle, { color: t.outline }]}>HINWEISE</Text>
+            <Text style={[styles.description, { color: t.on_surface }]}>{job.notes}</Text>
           </View>
         )}
 
         {/* Photos */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Fotos</Text>
+        <View style={[styles.card, { backgroundColor: t.surface_card }]}>
+          <Text style={[styles.sectionTitle, { color: t.outline }]}>FOTOS</Text>
           <View style={styles.photoGrid}>
             {(job.photos ?? []).map(uri => (
               <Pressable
@@ -282,19 +391,21 @@ export default function JobDetail() {
                 <Image source={{ uri }} style={styles.photoImage} />
               </Pressable>
             ))}
-            <Pressable style={styles.addPhotoButton} onPress={handleAddPhoto}>
+            <Pressable
+              style={[styles.addPhotoButton, { borderColor: t.outline_variant }]}
+              onPress={handleAddPhoto}
+            >
               <View style={styles.addPhotoIcon}>
-                <View style={styles.addPhotoH} />
-                <View style={styles.addPhotoV} />
+                <View style={[styles.addPhotoH, { backgroundColor: t.on_surface_variant }]} />
+                <View style={[styles.addPhotoV, { backgroundColor: t.on_surface_variant }]} />
               </View>
             </Pressable>
           </View>
           {(job.photos ?? []).length > 0 && (
-            <Text style={styles.photoHint}>Gedrückt halten zum Löschen</Text>
+            <Text style={[styles.photoHint, { color: t.outline }]}>Gedrückt halten zum Löschen</Text>
           )}
         </View>
 
-        {/* Bottom spacer so content clears the fixed bar */}
         <View style={{ height: 16 }} />
       </ScrollView>
 
@@ -307,99 +418,70 @@ export default function JobDetail() {
         </Pressable>
       </Modal>
 
-      {/* Fixed bottom bar */}
-      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 16 }]}>
-        <View style={styles.secondaryRow}>
-          <Pressable
-            style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
-            onPress={() => router.push(`/job/edit/${job.id}`)}
-          >
-            <Text style={styles.secondaryButtonText}>Bearbeiten</Text>
-          </Pressable>
-
-          {job.quoteNumber && job.invoiceNumber ? (
-            <>
-              <Pressable
-                style={({ pressed }) => [styles.secondaryButton, sharingPDF === 'quote' && styles.buttonDisabled, pressed && styles.buttonPressed]}
-                onPress={() => handleSharePDF('quote')}
-                disabled={sharingPDF !== null}
-              >
-                <Text style={styles.secondaryButtonText}>{sharingPDF === 'quote' ? 'PDF…' : 'Angebot'}</Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [styles.secondaryButton, sharingPDF === 'invoice' && styles.buttonDisabled, pressed && styles.buttonPressed]}
-                onPress={() => handleSharePDF('invoice')}
-                disabled={sharingPDF !== null}
-              >
-                <Text style={styles.secondaryButtonText}>{sharingPDF === 'invoice' ? 'PDF…' : 'Rechnung'}</Text>
-              </Pressable>
-            </>
-          ) : (
-            <Pressable
-              style={({ pressed }) => [styles.secondaryButton, sharingPDF !== null && styles.buttonDisabled, pressed && styles.buttonPressed]}
-              onPress={() => handleSharePDF(job.invoiceNumber ? 'invoice' : 'quote')}
-              disabled={sharingPDF !== null}
-            >
-              <Text style={styles.secondaryButtonText}>{sharingPDF !== null ? 'PDF…' : 'PDF teilen'}</Text>
-            </Pressable>
-          )}
-        </View>
-
-        {nextLabel && (
+      {/* Fixed bottom CTA */}
+      {nextLabel && (
+        <View style={[styles.bottomBar, { backgroundColor: t.surface, paddingBottom: insets.bottom + 16 }]}>
           <Pressable
             style={({ pressed }) => [
               styles.primaryButton,
+              { backgroundColor: t.primary },
               (advancingStatus || sharingPDF !== null) && styles.buttonDisabled,
-              pressed && !(advancingStatus || sharingPDF !== null) && styles.buttonPressed,
+              pressed && !(advancingStatus || sharingPDF !== null) && { transform: [{ scale: 1.02 }] },
             ]}
             onPress={advanceStatus}
             disabled={advancingStatus || sharingPDF !== null}
           >
             {advancingStatus ? (
-              <ActivityIndicator color="#111111" />
+              <ActivityIndicator color={t.on_primary} />
             ) : (
               <>
-                <Text style={styles.primaryButtonText}>{nextLabel}</Text>
+                <Text style={[styles.primaryButtonText, { color: t.on_primary }]}>{nextLabel}</Text>
                 {(job.status === 'draft' || job.status === 'accepted') && (
-                  <Text style={styles.primaryButtonSubLabel}>PDF wird automatisch geteilt</Text>
+                  <Text style={[styles.primaryButtonSubLabel, { color: t.on_primary }]}>PDF wird automatisch geteilt</Text>
                 )}
               </>
             )}
           </Pressable>
-        )}
-      </View>
+        </View>
+      )}
     </View>
   );
 }
 
-function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
+function Row({ label, value, bold, t }: {
+  label: string;
+  value: string;
+  bold?: boolean;
+  t: ReturnType<typeof useTheme>;
+}) {
   return (
     <View style={styles.row}>
-      <Text style={[styles.rowLabel, bold && styles.rowLabelBold]}>{label}</Text>
-      <Text style={[styles.rowValue, bold && styles.rowValueBold]}>{value}</Text>
+      <Text style={[styles.rowLabel, { color: bold ? t.on_surface : t.on_surface_variant }, bold && styles.rowLabelBold]}>{label}</Text>
+      <Text style={[styles.rowValue, { color: t.on_surface }, bold && styles.rowValueBold]}>{value}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg },
+  container: { flex: 1 },
 
   // Hero
   hero: {
-    backgroundColor: C.surface,
     paddingHorizontal: 18,
     paddingTop: 20,
     paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: C.border,
     alignItems: 'flex-start',
     gap: 6,
   },
-  heroLabel: { fontSize: 12, fontFamily: 'DMSans_400Regular', color: C.textMid, textTransform: 'uppercase', letterSpacing: 1 },
+  heroLabel: {
+    fontSize: 11,
+    fontFamily: F.labelSemi,
+    textTransform: 'uppercase',
+    letterSpacing: 0.05 * 11,
+  },
   heroAmount: {
     fontSize: 36,
-    fontFamily: 'DMSans_700Bold',
-    color: C.text,
+    fontFamily: F.dataBold,
     fontVariant: ['tabular-nums'],
     letterSpacing: -1.5,
   },
@@ -409,13 +491,13 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 100,
+    borderRadius: 9999,
     marginTop: 2,
   },
   heroBadgeDot: { width: 6, height: 6, borderRadius: 3 },
-  heroBadgeText: { fontSize: 12, fontFamily: 'DMSans_500Medium' },
+  heroBadgeText: { fontSize: 12, fontFamily: F.bodyMedium },
 
-  // Progress dots row
+  // Progress dots
   dotsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -424,65 +506,80 @@ const styles = StyleSheet.create({
   },
   dotColumn: { alignItems: 'center', gap: 3 },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  dotDone: { backgroundColor: '#3D9B6B' },
-  dotCurrent: { backgroundColor: '#E8A030' },
-  dotFuture: { borderWidth: 1.5, borderColor: '#3A3A3A' },
-  dotDate: { fontSize: 11, fontFamily: 'DMSans_500Medium', color: '#8A8A8A' },
-  dotDatePlaceholder: { height: 14 }, // same height as dotDate text line
-  dotLabel: { fontSize: 10, fontFamily: 'DMSans_400Regular', color: '#4A4A4A' },
+  dotDate: { fontSize: 11, fontFamily: F.bodyMedium },
+  dotDatePlaceholder: { height: 14 },
+  dotLabel: { fontSize: 10, fontFamily: F.body },
+
+  // Icon row
+  iconRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 16,
+  },
+  iconAction: {
+    alignItems: 'center',
+    minWidth: 52,
+    minHeight: 52,
+    justifyContent: 'center',
+    gap: 6,
+  },
+  iconActionPressed: { opacity: 0.7 },
+  iconActionIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconActionLabel: { fontSize: 11, fontFamily: F.body },
 
   // Scroll
   scroll: { flex: 1 },
-  content: { padding: 16, gap: 10 },
+  scrollContent: { padding: 16, gap: 10 },
 
   // Cards
   card: {
-    backgroundColor: C.surface,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 16,
-    borderWidth: 1,
-    borderColor: C.border,
   },
-  customerName: { fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: C.text, marginBottom: 4 },
-  meta: { fontSize: 12, fontFamily: 'DMSans_400Regular', color: C.textMid, marginTop: 2 },
+  customerName: { fontSize: 15, fontFamily: F.bodySemi, marginBottom: 4 },
+  meta: { fontSize: 12, fontFamily: F.body, marginTop: 2 },
   sectionTitle: {
     fontSize: 11,
-    fontFamily: 'DMSans_600SemiBold',
-    color: C.textDim,
+    fontFamily: F.labelSemi,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 0.05 * 11,
     marginBottom: 10,
   },
-  description: { fontSize: 15, fontFamily: 'DMSans_400Regular', color: C.text, lineHeight: 22 },
+  description: { fontSize: 15, fontFamily: F.body, lineHeight: 22 },
 
   // Line items
   lineItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 8 },
   lineItemLeft: { flex: 1, marginRight: 12 },
-  lineItemDesc: { fontSize: 15, fontFamily: 'DMSans_400Regular', color: C.text },
-  lineItemQty: { fontSize: 12, fontFamily: 'DMSans_400Regular', color: C.textMid, marginTop: 2 },
-  lineItemTotal: { fontSize: 15, fontFamily: 'DMSans_500Medium', color: C.text, fontVariant: ['tabular-nums'] },
-  divider: { height: 1, backgroundColor: C.border, marginVertical: 8 },
+  lineItemDesc: { fontSize: 15, fontFamily: F.body },
+  lineItemQty: { fontSize: 12, fontFamily: F.body, marginTop: 2 },
+  lineItemTotal: { fontSize: 15, fontFamily: F.bodyMedium, fontVariant: ['tabular-nums'] },
 
   // Row (totals)
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 },
-  rowLabel: { fontSize: 15, fontFamily: 'DMSans_400Regular', color: C.textMid },
-  rowValue: { fontSize: 15, fontFamily: 'DMSans_400Regular', color: C.text, fontVariant: ['tabular-nums'] },
-  rowLabelBold: { fontFamily: 'DMSans_600SemiBold', color: C.text },
-  rowValueBold: { fontFamily: 'DMSans_700Bold', color: C.text },
+  rowLabel: { fontSize: 15, fontFamily: F.body },
+  rowValue: { fontSize: 15, fontFamily: F.body, fontVariant: ['tabular-nums'] },
+  rowLabelBold: { fontFamily: F.bodySemi },
+  rowValueBold: { fontFamily: F.dataBold },
 
   // Photos
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  photoThumb: { width: 80, height: 80, borderRadius: 8, overflow: 'hidden' },
+  photoThumb: { width: 80, height: 80, borderRadius: 10, overflow: 'hidden' },
   photoImage: { width: 80, height: 80 },
   addPhotoButton: {
-    width: 80, height: 80, borderRadius: 8,
-    borderWidth: 1, borderColor: C.border2, borderStyle: 'dashed',
+    width: 80, height: 80, borderRadius: 10,
+    borderWidth: 1, borderStyle: 'dashed',
     alignItems: 'center', justifyContent: 'center',
   },
   addPhotoIcon: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
-  addPhotoH: { position: 'absolute', width: 24, height: 2, backgroundColor: C.textMid, borderRadius: 1 },
-  addPhotoV: { position: 'absolute', width: 2, height: 24, backgroundColor: C.textMid, borderRadius: 1 },
-  photoHint: { fontSize: 12, fontFamily: 'DMSans_400Regular', color: C.textDim, marginTop: 6 },
+  addPhotoH: { position: 'absolute', width: 24, height: 2, borderRadius: 1 },
+  addPhotoV: { position: 'absolute', width: 2, height: 24, borderRadius: 1 },
+  photoHint: { fontSize: 12, fontFamily: F.body, marginTop: 6 },
 
   // Lightbox
   lightboxBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
@@ -490,29 +587,14 @@ const styles = StyleSheet.create({
 
   // Bottom bar
   bottomBar: {
-    backgroundColor: C.surface,
-    borderTopWidth: 1,
-    borderTopColor: C.border,
     padding: 16,
-    gap: 10,
   },
-  secondaryRow: { flexDirection: 'row', gap: 10 },
-  secondaryButton: {
-    flex: 1,
-    backgroundColor: C.surface2,
-    borderRadius: 14,
-    padding: 14,
-    alignItems: 'center',
-  },
-  secondaryButtonText: { color: C.text, fontSize: 15, fontFamily: 'DMSans_500Medium' },
   primaryButton: {
-    backgroundColor: C.amber,
-    borderRadius: 18,
+    borderRadius: 9999,
     padding: 16,
     alignItems: 'center',
   },
-  primaryButtonText: { color: '#111111', fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
-  primaryButtonSubLabel: { color: 'rgba(17,17,17,0.65)', fontSize: 11, fontFamily: 'DMSans_400Regular', marginTop: 2 },
+  primaryButtonText: { fontSize: 16, fontFamily: F.bodySemi },
+  primaryButtonSubLabel: { fontSize: 11, fontFamily: F.body, marginTop: 2, opacity: 0.65 },
   buttonDisabled: { opacity: 0.4 },
-  buttonPressed: { opacity: 0.85 },
 });

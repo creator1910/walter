@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 import { Customer, Job, LineItem } from '../types';
-import { C } from '../lib/theme';
+import { F, useTheme } from '../lib/theme';
 
 export interface JobFormValues {
   customer: Customer;
@@ -35,6 +35,8 @@ export function jobToFormValues(job: Job): JobFormValues {
 }
 
 export default function JobForm({ values, onChange }: Props) {
+  const t = useTheme();
+
   function updateCustomer(field: keyof Customer, value: string) {
     onChange({ ...values, customer: { ...values.customer, [field]: value } });
   }
@@ -65,130 +67,97 @@ export default function JobForm({ values, onChange }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: t.surface }]} keyboardShouldPersistTaps="handled">
       {/* Customer */}
-      <Text style={styles.sectionTitle}>Kunde</Text>
-      <View style={styles.card}>
-        <Field
-          label="Name"
-          value={values.customer.name}
-          onChangeText={v => updateCustomer('name', v)}
-          placeholder="Firmenname oder Nachname"
-        />
-        <Field
-          label="Adresse"
-          value={values.customer.address ?? ''}
-          onChangeText={v => updateCustomer('address', v)}
-          placeholder="Straße, PLZ Ort"
-        />
-        <Field
-          label="Telefon"
-          value={values.customer.phone ?? ''}
-          onChangeText={v => updateCustomer('phone', v)}
-          placeholder="+49 ..."
-          keyboardType="phone-pad"
-        />
-        <Field
-          label="E-Mail"
-          value={values.customer.email ?? ''}
-          onChangeText={v => updateCustomer('email', v)}
-          placeholder="email@beispiel.de"
-          keyboardType="email-address"
-          isLast
-        />
+      <Text style={[styles.sectionTitle, { color: t.outline }]}>KUNDE</Text>
+      <View style={[styles.card, { backgroundColor: t.surface_card }]}>
+        <FormField label="Name" value={values.customer.name} onChangeText={v => updateCustomer('name', v)} placeholder="Firmenname oder Nachname" t={t} />
+        <FormField label="Adresse" value={values.customer.address ?? ''} onChangeText={v => updateCustomer('address', v)} placeholder="Straße, PLZ Ort" t={t} />
+        <FormField label="Telefon" value={values.customer.phone ?? ''} onChangeText={v => updateCustomer('phone', v)} placeholder="+49 ..." keyboardType="phone-pad" t={t} />
+        <FormField label="E-Mail" value={values.customer.email ?? ''} onChangeText={v => updateCustomer('email', v)} placeholder="email@beispiel.de" keyboardType="email-address" t={t} />
       </View>
 
       {/* Description */}
-      <Text style={styles.sectionTitle}>Leistungsbeschreibung</Text>
-      <View style={styles.card}>
+      <Text style={[styles.sectionTitle, { color: t.outline }]}>LEISTUNGSBESCHREIBUNG</Text>
+      <View style={[styles.card, { backgroundColor: t.surface_card }]}>
         <TextInput
-          style={styles.textArea}
+          style={[styles.textArea, { color: t.on_surface }]}
           multiline
           value={values.description}
           onChangeText={v => onChange({ ...values, description: v })}
           placeholder="Beschreibung der Arbeiten…"
-          placeholderTextColor={C.textDim}
+          placeholderTextColor={t.outline}
           textAlignVertical="top"
         />
       </View>
 
       {/* Line items */}
-      <Text style={styles.sectionTitle}>Positionen</Text>
+      <Text style={[styles.sectionTitle, { color: t.outline }]}>POSITIONEN</Text>
       {values.lineItems.map((item, i) => (
-        <View key={i} style={styles.card}>
+        <View key={i} style={[styles.card, { backgroundColor: t.surface_card }]}>
           <View style={styles.lineItemHeader}>
-            <Text style={styles.lineItemNum}>Position {i + 1}</Text>
+            <Text style={[styles.lineItemNum, { color: t.on_surface_variant }]}>Position {i + 1}</Text>
             <Pressable onPress={() => removeLineItem(i)} hitSlop={8}>
-              <Text style={styles.removeBtn}>Entfernen</Text>
+              <Text style={[styles.removeBtn, { color: t.error }]}>Entfernen</Text>
             </Pressable>
           </View>
-          <Field
-            label="Beschreibung"
-            value={item.description}
-            onChangeText={v => updateLineItem(i, 'description', v)}
-            placeholder="Leistung oder Material"
-          />
+          <FormField label="Beschreibung" value={item.description} onChangeText={v => updateLineItem(i, 'description', v)} placeholder="Leistung oder Material" t={t} />
           <View style={styles.row}>
             <View style={styles.rowField}>
-              <Field
-                label="Menge"
-                value={item.quantity.toString()}
-                onChangeText={v => updateLineItem(i, 'quantity', v)}
-                keyboardType="decimal-pad"
-                placeholder="1"
-              />
+              <FormField label="Menge" value={item.quantity.toString()} onChangeText={v => updateLineItem(i, 'quantity', v)} keyboardType="decimal-pad" placeholder="1" t={t} />
             </View>
             <View style={styles.rowField}>
-              <Field
-                label="Einheit"
-                value={item.unit}
-                onChangeText={v => updateLineItem(i, 'unit', v)}
-                placeholder="Std."
-              />
+              <FormField label="Einheit" value={item.unit} onChangeText={v => updateLineItem(i, 'unit', v)} placeholder="Std." t={t} />
             </View>
             <View style={styles.rowField}>
-              <Field
-                label="Preis (netto)"
-                value={item.unitPrice.toString()}
-                onChangeText={v => updateLineItem(i, 'unitPrice', v)}
-                keyboardType="decimal-pad"
-                placeholder="0"
-                isLast
-              />
+              <FormField label="Preis (netto)" value={item.unitPrice.toString()} onChangeText={v => updateLineItem(i, 'unitPrice', v)} keyboardType="decimal-pad" placeholder="0" t={t} />
             </View>
           </View>
         </View>
       ))}
-      <Pressable style={styles.addBtn} onPress={addLineItem}>
-        <Text style={styles.addBtnText}>+ Position hinzufügen</Text>
+      <Pressable
+        style={[styles.addBtn, { borderColor: t.outline_variant }]}
+        onPress={addLineItem}
+      >
+        <Text style={[styles.addBtnText, { color: t.primary }]}>+ Position hinzufügen</Text>
       </Pressable>
 
       {/* VAT */}
-      <Text style={styles.sectionTitle}>MwSt.-Satz</Text>
-      <View style={[styles.card, styles.vatRow]}>
-        {VAT_OPTIONS.map(rate => (
-          <Pressable
-            key={rate}
-            style={[styles.vatChip, values.vatRate === rate && styles.vatChipActive]}
-            onPress={() => onChange({ ...values, vatRate: rate })}
-          >
-            <Text style={[styles.vatChipText, values.vatRate === rate && styles.vatChipTextActive]}>
-              {rate * 100}%
-            </Text>
-          </Pressable>
-        ))}
+      <Text style={[styles.sectionTitle, { color: t.outline }]}>MWST.-SATZ</Text>
+      <View style={[styles.card, styles.vatRow, { backgroundColor: t.surface_card }]}>
+        {VAT_OPTIONS.map(rate => {
+          const active = values.vatRate === rate;
+          return (
+            <Pressable
+              key={rate}
+              style={[
+                styles.vatChip,
+                { borderColor: active ? t.primary : t.outline_variant },
+                active && { backgroundColor: t.primary },
+              ]}
+              onPress={() => onChange({ ...values, vatRate: rate })}
+            >
+              <Text style={[
+                styles.vatChipText,
+                { color: active ? t.on_primary : t.on_surface_variant },
+              ]}>
+                {rate * 100}%
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
 
       {/* Notes */}
-      <Text style={styles.sectionTitle}>Hinweise (optional)</Text>
-      <View style={styles.card}>
+      <Text style={[styles.sectionTitle, { color: t.outline }]}>HINWEISE (OPTIONAL)</Text>
+      <View style={[styles.card, { backgroundColor: t.surface_card }]}>
         <TextInput
-          style={styles.textArea}
+          style={[styles.textArea, { color: t.on_surface }]}
           multiline
           value={values.notes}
           onChangeText={v => onChange({ ...values, notes: v })}
           placeholder="Zahlungsbedingungen, Anmerkungen…"
-          placeholderTextColor={C.textDim}
+          placeholderTextColor={t.outline}
           textAlignVertical="top"
         />
       </View>
@@ -196,30 +165,30 @@ export default function JobForm({ values, onChange }: Props) {
   );
 }
 
-function Field({
+function FormField({
   label,
   value,
   onChangeText,
   placeholder,
   keyboardType,
-  isLast,
+  t,
 }: {
   label: string;
   value: string;
   onChangeText: (v: string) => void;
   placeholder?: string;
   keyboardType?: 'default' | 'phone-pad' | 'email-address' | 'decimal-pad';
-  isLast?: boolean;
+  t: ReturnType<typeof useTheme>;
 }) {
   return (
-    <View style={[styles.field, !isLast && styles.fieldBorder]}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+    <View style={styles.field}>
+      <Text style={[styles.fieldLabel, { color: t.on_surface_variant }]}>{label}</Text>
       <TextInput
-        style={styles.fieldInput}
+        style={[styles.fieldInput, { color: t.on_surface, borderBottomColor: t.outline_variant }]}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={C.textDim}
+        placeholderTextColor={t.outline}
         keyboardType={keyboardType ?? 'default'}
         autoCapitalize="none"
       />
@@ -231,30 +200,29 @@ const styles = StyleSheet.create({
   container: { padding: 16, gap: 8, paddingBottom: 120 },
   sectionTitle: {
     fontSize: 11,
-    fontFamily: 'DMSans_600SemiBold',
-    color: C.textDim,
+    fontFamily: F.labelSemi,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 0.05 * 11,
     marginTop: 8,
     marginBottom: 4,
     marginLeft: 4,
   },
   card: {
-    backgroundColor: C.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: C.border,
+    borderRadius: 16,
     overflow: 'hidden',
   },
   field: { paddingHorizontal: 14, paddingVertical: 10 },
-  fieldBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
-  fieldLabel: { fontSize: 12, fontFamily: 'DMSans_400Regular', color: C.textMid, marginBottom: 2 },
-  fieldInput: { fontSize: 15, fontFamily: 'DMSans_400Regular', color: C.text },
+  fieldLabel: { fontSize: 12, fontFamily: F.body, marginBottom: 2 },
+  fieldInput: {
+    fontSize: 15,
+    fontFamily: F.body,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+  },
   textArea: {
     padding: 14,
     fontSize: 15,
-    fontFamily: 'DMSans_400Regular',
-    color: C.text,
+    fontFamily: F.body,
     minHeight: 80,
   },
   lineItemHeader: {
@@ -263,31 +231,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: C.border,
   },
-  lineItemNum: { fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: C.textMid },
-  removeBtn: { fontSize: 13, fontFamily: 'DMSans_400Regular', color: C.error },
+  lineItemNum: { fontSize: 13, fontFamily: F.bodySemi },
+  removeBtn: { fontSize: 13, fontFamily: F.body },
   row: { flexDirection: 'row' },
   rowField: { flex: 1 },
   addBtn: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.amber,
-    borderRadius: 14,
+    borderWidth: 1,
+    borderRadius: 16,
     padding: 12,
     alignItems: 'center',
   },
-  addBtnText: { color: C.amber, fontSize: 15, fontFamily: 'DMSans_500Medium' },
+  addBtnText: { fontSize: 15, fontFamily: F.bodyMedium },
   vatRow: { flexDirection: 'row', padding: 12, gap: 10 },
   vatChip: {
     flex: 1,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 9999,
     borderWidth: 1,
-    borderColor: C.border2,
     alignItems: 'center',
   },
-  vatChipActive: { backgroundColor: C.amber, borderColor: C.amber },
-  vatChipText: { fontSize: 15, fontFamily: 'DMSans_500Medium', color: C.textMid },
-  vatChipTextActive: { color: '#111111' },
+  vatChipText: { fontSize: 15, fontFamily: F.bodyMedium },
 });

@@ -42,6 +42,20 @@ Built: Photo grid on job detail screen. expo-image-picker (library + camera), ex
 
 ---
 
+## P4: Shared Icon component
+
+**What:** Extract a shared `<Icon>` component (or icon library) from inline drawn-View icons across the app (mic in new-job.tsx, PDF/Edit/Share/Mehr in job/[id].tsx).
+
+**Why:** As drawn icons multiply, each file draws its own versions independently. A shared set ensures visual consistency and makes future icon updates a single change.
+
+**Pros:** Single source of truth for icon shapes and sizing.
+**Cons:** Small abstraction cost; icons are simple enough that drift risk is low.
+**Context:** Added during the 2026-03-21 redesign (icon row feature). Inline drawing is fine for now — refactor when a 3rd screen needs its own set of icons.
+**Depends on:** Icon row feature ships first.
+**Priority:** P5
+
+---
+
 ## P4: Kunde wiederverwenden
 
 **What:** When creating a new job, offer to pick an existing customer from previous jobs instead of re-typing name/address/phone.

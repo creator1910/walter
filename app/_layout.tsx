@@ -1,32 +1,41 @@
 import {
-  DMSans_400Regular,
-  DMSans_500Medium,
-  DMSans_600SemiBold,
-  DMSans_700Bold,
-  useFonts,
-} from '@expo-google-fonts/dm-sans';
+  Geist_600SemiBold,
+  Geist_700Bold,
+} from '@expo-google-fonts/geist';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+} from '@expo-google-fonts/inter';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import { useColorScheme } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useTheme } from '../lib/theme';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    DMSans_400Regular,
-    DMSans_500Medium,
-    DMSans_600SemiBold,
-    DMSans_700Bold,
+    Geist_600SemiBold,
+    Geist_700Bold,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
   });
+
+  const scheme = useColorScheme();
+  const t = useTheme();
 
   if (!fontsLoaded) return null;
 
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: '#1C1C1C' },
-          headerTintColor: '#F5F4F2',
-          headerTitleStyle: { fontFamily: 'DMSans_600SemiBold', fontSize: 17 },
-          contentStyle: { backgroundColor: '#111111' },
+          headerStyle: { backgroundColor: t.surface },
+          headerTintColor: t.on_surface,
+          headerTitleStyle: { fontFamily: 'Geist_600SemiBold', fontSize: 17 },
+          contentStyle: { backgroundColor: t.surface },
           headerShadowVisible: false,
         }}
       >

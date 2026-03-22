@@ -4,7 +4,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import JobForm, { JobFormValues, jobToFormValues } from '../../../components/JobForm';
 import { loadJobs, saveJob } from '../../../lib/storage';
-import { C } from '../../../lib/theme';
+import { F, useTheme } from '../../../lib/theme';
 import { Job } from '../../../types';
 
 const SENT_STATUSES = new Set(['quote_sent', 'accepted', 'invoiced', 'paid']);
@@ -16,6 +16,7 @@ export default function EditJob() {
   const [saving, setSaving] = useState(false);
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const t = useTheme();
 
   useFocusEffect(
     useCallback(() => {
@@ -76,11 +77,17 @@ export default function EditJob() {
     <>
       <JobForm values={values} onChange={setValues} />
       <Pressable
-        style={({ pressed }) => [styles.saveBtn, { bottom: insets.bottom + 16 }, saving && styles.saveBtnDisabled, pressed && styles.saveBtnPressed]}
+        style={({ pressed }) => [
+          styles.saveBtn,
+          { bottom: insets.bottom + 16, backgroundColor: saving ? t.surface_high : t.primary },
+          pressed && { transform: [{ scale: 1.02 }] },
+        ]}
         onPress={handleSave}
         disabled={saving}
       >
-        <Text style={styles.saveBtnText}>{saving ? 'Speichern…' : 'Speichern'}</Text>
+        <Text style={[styles.saveBtnText, { color: saving ? t.outline : t.on_primary }]}>
+          {saving ? 'Speichern…' : 'Speichern'}
+        </Text>
       </Pressable>
     </>
   );
@@ -89,20 +96,11 @@ export default function EditJob() {
 const styles = StyleSheet.create({
   saveBtn: {
     position: 'absolute',
-    bottom: 16, // overridden inline with insets.bottom + 16
     left: 16,
     right: 16,
-    backgroundColor: C.amber,
-    borderRadius: 18,
+    borderRadius: 9999,
     padding: 16,
     alignItems: 'center',
-    shadowColor: C.amber,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 6,
   },
-  saveBtnDisabled: { backgroundColor: C.border2, shadowOpacity: 0 },
-  saveBtnPressed: { opacity: 0.85 },
-  saveBtnText: { color: '#111111', fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
+  saveBtnText: { fontSize: 16, fontFamily: F.bodySemi },
 });

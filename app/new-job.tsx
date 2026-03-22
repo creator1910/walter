@@ -18,7 +18,7 @@ import {
 } from 'expo-speech-recognition';
 import { extractJobFromText } from '../lib/claude';
 import { generateId, loadJobs, saveJob } from '../lib/storage';
-import { C } from '../lib/theme';
+import { F, useTheme } from '../lib/theme';
 import { Job } from '../types';
 
 type VoiceState = 'idle' | 'recording' | 'processing';
@@ -29,6 +29,7 @@ export default function NewJob() {
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
   const router = useRouter();
   const partialRef = useRef('');
+  const t = useTheme();
 
   useSpeechRecognitionEvent('result', event => {
     const transcript = event.results[0]?.transcript ?? '';
@@ -112,21 +113,26 @@ export default function NewJob() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: t.surface }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={styles.label}>Beschreibe den Auftrag</Text>
-        <Text style={styles.hint}>
+        <Text style={[styles.label, { color: t.on_surface }]}>Beschreibe den Auftrag</Text>
+        <Text style={[styles.hint, { color: t.on_surface_variant }]}>
           Z.B.: „Tapezierarbeiten bei Müller GmbH, Hauptstraße 5. 3 Zimmer, je 20m². Material und Arbeit."
         </Text>
 
-        <View style={styles.inputRow}>
+        {/* Pill input container with inset mic button */}
+        <View style={[
+          styles.pillContainer,
+          { backgroundColor: t.surface_card },
+          isRecording && { borderWidth: 1, borderColor: t.error },
+        ]}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: t.on_surface }]}
             multiline
             placeholder="Beschreibung eingeben oder Mikrofon tippen…"
-            placeholderTextColor={C.textDim}
+            placeholderTextColor={t.outline}
             value={input}
             onChangeText={setInput}
             autoFocus
@@ -136,7 +142,7 @@ export default function NewJob() {
           <Pressable
             style={({ pressed }) => [
               styles.micButton,
-              isRecording && styles.micButtonActive,
+              { backgroundColor: isRecording ? t.error : t.surface_high },
               pressed && styles.micButtonPressed,
             ]}
             onPress={handleVoicePress}
@@ -146,9 +152,9 @@ export default function NewJob() {
               <View style={styles.stopIcon} />
             ) : (
               <View style={styles.micIconView}>
-                <View style={styles.micCapsule} />
-                <View style={styles.micStand} />
-                <View style={styles.micBase} />
+                <View style={[styles.micCapsule, { backgroundColor: t.on_surface_variant }]} />
+                <View style={[styles.micStand, { borderColor: t.on_surface_variant }]} />
+                <View style={[styles.micBase, { backgroundColor: t.on_surface_variant }]} />
               </View>
             )}
           </Pressable>
@@ -156,24 +162,24 @@ export default function NewJob() {
 
         {isRecording && (
           <View style={styles.recordingHint}>
-            <View style={styles.recordingDot} />
-            <Text style={styles.recordingText}>Aufnahme läuft — tippe ⏹ zum Stoppen</Text>
+            <View style={[styles.recordingDot, { backgroundColor: t.error }]} />
+            <Text style={[styles.recordingText, { color: t.error }]}>Aufnahme läuft — tippe zum Stoppen</Text>
           </View>
         )}
 
         <Pressable
           style={({ pressed }) => [
             styles.button,
-            !canSubmit && styles.buttonDisabled,
-            pressed && styles.buttonPressed,
+            { backgroundColor: canSubmit ? t.primary : t.surface_high },
+            pressed && { transform: [{ scale: 1.02 }] },
           ]}
           onPress={handleCreate}
           disabled={!canSubmit}
         >
           {loading ? (
-            <ActivityIndicator color="#111111" />
+            <ActivityIndicator color={t.on_primary} />
           ) : (
-            <Text style={styles.buttonText}>Auftrag erstellen</Text>
+            <Text style={[styles.buttonText, { color: canSubmit ? t.on_primary : t.outline }]}>Auftrag erstellen</Text>
           )}
         </Pressable>
       </ScrollView>
@@ -182,60 +188,54 @@ export default function NewJob() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg },
+  container: { flex: 1 },
   scroll: { padding: 20, gap: 12 },
-  label: { fontSize: 17, fontFamily: 'DMSans_600SemiBold', color: C.text },
-  hint: { fontSize: 15, fontFamily: 'DMSans_400Regular', color: C.textMid, lineHeight: 21 },
-  inputRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
-  input: {
-    flex: 1,
-    backgroundColor: C.surface2,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: C.border2,
-    padding: 16,
-    fontSize: 16,
-    fontFamily: 'DMSans_400Regular',
-    color: C.text,
+  label: { fontSize: 17, fontFamily: F.headlineSemi },
+  hint: { fontSize: 15, fontFamily: F.body, lineHeight: 21 },
+
+  pillContainer: {
+    borderRadius: 24,
     minHeight: 160,
   },
+  input: {
+    padding: 16,
+    paddingRight: 60,
+    fontSize: 16,
+    fontFamily: F.body,
+    minHeight: 160,
+    textAlignVertical: 'top',
+  },
+
   micButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: C.surface2,
-    borderWidth: 1,
-    borderColor: C.border2,
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 4,
-  },
-  micButtonActive: {
-    backgroundColor: '#D95535',
-    borderColor: '#D95535',
   },
   micButtonPressed: { opacity: 0.8 },
   stopIcon: { width: 14, height: 14, borderRadius: 2, backgroundColor: '#fff' },
   micIconView: { alignItems: 'center' },
-  micCapsule: { width: 10, height: 16, borderRadius: 5, backgroundColor: C.amber },
+  micCapsule: { width: 10, height: 16, borderRadius: 5 },
   micStand: {
     width: 16, height: 6,
     borderBottomLeftRadius: 8, borderBottomRightRadius: 8,
-    borderWidth: 2, borderTopWidth: 0, borderColor: C.amber,
+    borderWidth: 2, borderTopWidth: 0,
     marginTop: 1,
   },
-  micBase: { width: 12, height: 2, backgroundColor: C.amber, marginTop: 1 },
+  micBase: { width: 12, height: 2, marginTop: 1 },
+
   recordingHint: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  recordingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#D95535' },
-  recordingText: { fontSize: 13, fontFamily: 'DMSans_400Regular', color: '#D95535' },
+  recordingDot: { width: 8, height: 8, borderRadius: 4 },
+  recordingText: { fontSize: 13, fontFamily: F.body },
   button: {
-    backgroundColor: C.amber,
-    borderRadius: 18,
+    borderRadius: 9999,
     padding: 16,
     alignItems: 'center',
     marginTop: 8,
   },
-  buttonDisabled: { backgroundColor: C.border2 },
-  buttonPressed: { opacity: 0.85 },
-  buttonText: { color: '#111111', fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
+  buttonText: { fontSize: 16, fontFamily: F.bodySemi },
 });
