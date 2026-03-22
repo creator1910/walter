@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   },
   hint: { fontSize: 13, fontFamily: F.body, marginTop: -4 },
   field: { gap: 4 },
-  label: { fontSize: 13, fontFamily: F.bodyMedium },
+  label: { fontSize: 11, fontFamily: F.labelSemi, textTransform: 'uppercase', letterSpacing: 0.05 * 11 },
   input: {
     fontSize: 15,
     fontFamily: F.body,

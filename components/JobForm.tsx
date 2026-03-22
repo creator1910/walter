@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   field: { paddingHorizontal: 14, paddingVertical: 10 },
-  fieldLabel: { fontSize: 12, fontFamily: F.body, marginBottom: 2 },
+  fieldLabel: { fontSize: 11, fontFamily: F.labelSemi, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.05 * 11 },
   fieldInput: {
     fontSize: 15,
     fontFamily: F.body,
