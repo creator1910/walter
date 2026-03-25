@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -6,6 +6,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useFocusEffect, useRouter } from 'expo-router';
 import JobCard from '../../components/JobCard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,10 +18,17 @@ import { Job } from '../../types';
 const fmt = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 const monthFmt = new Intl.DateTimeFormat('de-DE', { month: 'long' });
 
+function easeOutCubic(x: number): number {
+  return 1 - Math.pow(1 - x, 3);
+}
+
 export default function Dashboard() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [greeting, setGreeting] = useState('');
   const [loading, setLoading] = useState(true);
+  const [displayAmount, setDisplayAmount] = useState(0);
+  const [version, setVersion] = useState(0);
+  const animTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const router = useRouter();
   const t = useTheme();
   const insets = useSafeAreaInsets();
@@ -29,10 +37,12 @@ export default function Dashboard() {
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
+      setDisplayAmount(0);
       Promise.all([loadJobs(), loadProfile()]).then(([loaded, profile]) => {
         setJobs(loaded);
         setGreeting(profile?.name ? `Hey, ${profile.name}` : 'Hey');
         setLoading(false);
+        setVersion(v => v + 1);
       });
     }, [])
   );
@@ -46,6 +56,32 @@ export default function Dashboard() {
   const pipeline = jobs
     .filter(j => j.status === 'quote_sent')
     .reduce((sum, j) => sum + calculateTotals(j.lineItems, j.vatRate).gross, 0);
+
+  // Count-up animation for hero amount
+  useEffect(() => {
+    if (loading) return;
+    if (animTimerRef.current) clearInterval(animTimerRef.current);
+
+    const DURATION = 700;
+    const FPS = 60;
+    const STEPS = Math.round((DURATION / 1000) * FPS);
+    let step = 0;
+
+    animTimerRef.current = setInterval(() => {
+      step++;
+      const progress = easeOutCubic(step / STEPS);
+      setDisplayAmount(bezahltMonat * progress);
+      if (step >= STEPS) {
+        setDisplayAmount(bezahltMonat);
+        clearInterval(animTimerRef.current!);
+        animTimerRef.current = null;
+      }
+    }, 1000 / FPS);
+
+    return () => {
+      if (animTimerRef.current) clearInterval(animTimerRef.current);
+    };
+  }, [bezahltMonat, loading]);
 
   const activeJobs = jobs
     .filter(j => ACTIVE_STATUSES.has(j.status))
@@ -77,9 +113,9 @@ export default function Dashboard() {
       style={[styles.container, { backgroundColor: t.surface }]}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}
     >
-      {/* Hero card — primary background, "Bezahlt" as north star metric */}
+      {/* Hero — command center */}
       <View style={[styles.hero, { backgroundColor: t.primary }]}>
-        <View style={styles.heroTop}>
+        <View style={styles.heroHeader}>
           <Text style={[styles.heroGreeting, { color: t.on_primary }]}>
             {loading ? '' : greeting}
           </Text>
@@ -87,49 +123,62 @@ export default function Dashboard() {
             {currentMonth}
           </Text>
         </View>
+
         <Text
           style={[styles.heroAmount, { color: t.on_primary }]}
           numberOfLines={1}
           adjustsFontSizeToFit
-          minimumFontScale={0.6}
+          minimumFontScale={0.5}
         >
-          {loading ? '—' : fmt.format(bezahltMonat)}
+          {loading ? '—' : fmt.format(displayAmount)}
         </Text>
-        <Text style={[styles.heroLabel, { color: t.on_primary }]}>
+        <Text style={[styles.heroAmountLabel, { color: t.on_primary }]}>
           Bezahlt diesen Monat
         </Text>
+
+        {/* Compact secondary metrics */}
+        <View style={styles.metricRow}>
+          <View style={styles.metricItem}>
+            <Text style={[styles.metricKey, { color: t.on_primary }]}>OFFEN</Text>
+            <Text style={[styles.metricVal, { color: t.on_primary }]}>
+              {loading ? '—' : fmt.format(ausstehend)}
+            </Text>
+          </View>
+          <View style={styles.metricItem}>
+            <Text style={[styles.metricKey, { color: t.on_primary }]}>PIPELINE</Text>
+            <Text style={[styles.metricVal, { color: t.on_primary }]}>
+              {loading ? '—' : fmt.format(pipeline)}
+            </Text>
+          </View>
+        </View>
       </View>
 
-      {/* Secondary metrics */}
-      <View style={styles.metricsRow}>
-        <View style={[styles.metricTile, { backgroundColor: t.surface_card }]}>
-          <Text style={[styles.metricLabel, { color: t.outline }]}>AUSSTEHEND</Text>
-          <Text style={[styles.metricValue, { color: t.warning }]}>
-            {loading ? '—' : fmt.format(ausstehend)}
-          </Text>
-        </View>
-        <View style={[styles.metricTile, { backgroundColor: t.surface_card }]}>
-          <Text style={[styles.metricLabel, { color: t.outline }]}>PIPELINE</Text>
-          <Text style={[styles.metricValue, { color: t.on_surface }]}>
-            {loading ? '—' : fmt.format(pipeline)}
-          </Text>
-        </View>
-      </View>
-
+      {/* Active jobs */}
       {!loading && activeJobs.length > 0 && (
         <View>
-          <Text style={[styles.sectionHeader, { color: t.outline }]}>AKTIVE AUFTRÄGE</Text>
-          {activeJobs.map(job => (
-            <JobCard key={job.id} job={job} onPress={() => router.push(`/job/${job.id}`)} />
+          <Text style={[styles.sectionHeader, { color: t.outline }]}>AKTIV</Text>
+          {activeJobs.map((job, index) => (
+            <Animated.View
+              key={`${job.id}-${version}`}
+              entering={FadeInUp.delay(index * 60).duration(280)}
+            >
+              <JobCard job={job} onPress={() => router.push(`/job/${job.id}`)} />
+            </Animated.View>
           ))}
         </View>
       )}
 
+      {/* Recent other jobs */}
       {!loading && recentOtherJobs.length > 0 && (
         <View>
-          <Text style={[styles.sectionHeader, { color: t.outline }]}>ZULETZT ERSTELLT</Text>
-          {recentOtherJobs.map(job => (
-            <JobCard key={job.id} job={job} onPress={() => router.push(`/job/${job.id}`)} />
+          <Text style={[styles.sectionHeader, { color: t.outline }]}>ZULETZT</Text>
+          {recentOtherJobs.map((job, index) => (
+            <Animated.View
+              key={`${job.id}-${version}`}
+              entering={FadeInUp.delay((activeJobs.length + index) * 60).duration(280)}
+            >
+              <JobCard job={job} onPress={() => router.push(`/job/${job.id}`)} />
+            </Animated.View>
           ))}
         </View>
       )}
@@ -161,59 +210,60 @@ const styles = StyleSheet.create({
   // Hero card
   hero: {
     borderRadius: 24,
-    padding: 24,
-    paddingBottom: 28,
+    padding: 20,
+    paddingBottom: 20,
   },
-  heroTop: {
+  heroHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   heroGreeting: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: F.body,
+    opacity: 0.65,
   },
   heroMonth: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: F.labelSemi,
-    letterSpacing: 0.05 * 11,
+    letterSpacing: 0.05 * 10,
+    opacity: 0.65,
   },
   heroAmount: {
-    fontSize: 52,
+    fontSize: 60,
     fontFamily: F.displayBold,
     fontVariant: ['tabular-nums'],
-    letterSpacing: -0.02 * 52,
-    lineHeight: 56,
+    letterSpacing: -0.025 * 60,
+    lineHeight: 64,
   },
-  heroLabel: {
-    fontSize: 13,
+  heroAmountLabel: {
+    fontSize: 12,
     fontFamily: F.body,
-    marginTop: 6,
-    opacity: 0.55,
+    opacity: 0.45,
+    marginTop: 3,
+    marginBottom: 18,
   },
 
-  // Secondary metrics
-  metricsRow: {
+  // Compact metric row inside hero
+  metricRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 20,
   },
-  metricTile: {
-    flex: 1,
-    borderRadius: 16,
-    padding: 16,
-    gap: 6,
+  metricItem: {
+    gap: 3,
   },
-  metricLabel: {
-    fontSize: 11,
+  metricKey: {
+    fontSize: 10,
     fontFamily: F.labelSemi,
-    textTransform: 'uppercase',
-    letterSpacing: 0.05 * 11,
+    letterSpacing: 0.06 * 10,
+    opacity: 0.5,
   },
-  metricValue: {
-    fontSize: 18,
+  metricVal: {
+    fontSize: 15,
     fontFamily: F.dataBold,
     fontVariant: ['tabular-nums'],
+    opacity: 0.85,
   },
 
   // Job sections
