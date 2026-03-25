@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -10,34 +10,40 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useFocusEffect, useRouter } from 'expo-router';
 import JobCard from '../../components/JobCard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { calculateTotals } from '../../lib/claude';
-import { isThisMonth, loadJobs, loadProfile } from '../../lib/storage';
-import { ACTIVE_STATUSES, F, useTheme } from '../../lib/theme';
+import { loadJobs, loadProfile } from '../../lib/storage';
+import { F, useTheme } from '../../lib/theme';
 import { Job } from '../../types';
 
-const fmt = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
-const monthFmt = new Intl.DateTimeFormat('de-DE', { month: 'long' });
+const dateFmt = new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
 
-function easeOutCubic(x: number): number {
-  return 1 - Math.pow(1 - x, 3);
+function daysSince(isoDate: string | undefined): number {
+  if (!isoDate) return 0;
+  return Math.floor((Date.now() - new Date(isoDate).getTime()) / 86_400_000);
 }
+
+function daysLabel(days: number): string {
+  if (days === 0) return 'heute';
+  if (days === 1) return 'gestern';
+  return `vor ${days} Tagen`;
+}
+
+type OverdueItem = { job: Job; daysAgo: number };
+type QuoteItem = { job: Job; daysAgo: number };
+type InvoiceItem = { job: Job; daysAgo: number };
 
 export default function Dashboard() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [greeting, setGreeting] = useState('');
   const [loading, setLoading] = useState(true);
-  const [displayAmount, setDisplayAmount] = useState(0);
   const [version, setVersion] = useState(0);
-  const animTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const router = useRouter();
   const t = useTheme();
   const insets = useSafeAreaInsets();
-  const currentMonth = monthFmt.format(new Date()).toUpperCase();
+  const today = dateFmt.format(new Date());
 
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
-      setDisplayAmount(0);
       Promise.all([loadJobs(), loadProfile()]).then(([loaded, profile]) => {
         setJobs(loaded);
         setGreeting(profile?.name ? `Hey, ${profile.name}` : 'Hey');
@@ -47,57 +53,63 @@ export default function Dashboard() {
     }, [])
   );
 
-  const bezahltMonat = jobs
-    .filter(j => j.status === 'paid' && isThisMonth(j.paidAt))
-    .reduce((sum, j) => sum + calculateTotals(j.lineItems, j.vatRate).gross, 0);
-  const ausstehend = jobs
+  // Überfällig: invoiced & sent ≥14 days ago, oldest first
+  const overdueJobs: OverdueItem[] = jobs
     .filter(j => j.status === 'invoiced')
-    .reduce((sum, j) => sum + calculateTotals(j.lineItems, j.vatRate).gross, 0);
-  const pipeline = jobs
-    .filter(j => j.status === 'quote_sent')
-    .reduce((sum, j) => sum + calculateTotals(j.lineItems, j.vatRate).gross, 0);
+    .map(j => ({ job: j, daysAgo: daysSince(j.invoiceDate ?? j.createdAt) }))
+    .filter(({ daysAgo }) => daysAgo >= 14)
+    .sort((a, b) => b.daysAgo - a.daysAgo);
 
-  // Count-up animation for hero amount
-  useEffect(() => {
-    if (loading) return;
-    if (animTimerRef.current) clearInterval(animTimerRef.current);
-
-    const DURATION = 700;
-    const FPS = 60;
-    const STEPS = Math.round((DURATION / 1000) * FPS);
-    let step = 0;
-
-    animTimerRef.current = setInterval(() => {
-      step++;
-      const progress = easeOutCubic(step / STEPS);
-      setDisplayAmount(bezahltMonat * progress);
-      if (step >= STEPS) {
-        setDisplayAmount(bezahltMonat);
-        clearInterval(animTimerRef.current!);
-        animTimerRef.current = null;
-      }
-    }, 1000 / FPS);
-
-    return () => {
-      if (animTimerRef.current) clearInterval(animTimerRef.current);
-    };
-  }, [bezahltMonat, loading]);
-
-  const activeJobs = jobs
-    .filter(j => ACTIVE_STATUSES.has(j.status))
+  // Läuft gerade: in_progress
+  const activeJobs: Job[] = jobs
+    .filter(j => j.status === 'in_progress')
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const recentOtherJobs = jobs
-    .filter(j => !ACTIVE_STATUSES.has(j.status))
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 3);
+  // Rechnung versandt but not overdue
+  const invoicedJobs: InvoiceItem[] = jobs
+    .filter(j => j.status === 'invoiced')
+    .map(j => ({ job: j, daysAgo: daysSince(j.invoiceDate ?? j.createdAt) }))
+    .filter(({ daysAgo }) => daysAgo < 14)
+    .sort((a, b) => b.daysAgo - a.daysAgo);
+
+  // Angebot ausstehend
+  const quoteJobs: QuoteItem[] = jobs
+    .filter(j => j.status === 'quote_sent')
+    .map(j => ({ job: j, daysAgo: daysSince(j.quoteDate ?? j.createdAt) }))
+    .sort((a, b) => b.daysAgo - a.daysAgo);
+
+  // Entwurf
+  const draftJobs: Job[] = jobs
+    .filter(j => j.status === 'draft')
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const hasAnything = overdueJobs.length > 0 || activeJobs.length > 0 ||
+    invoicedJobs.length > 0 || quoteJobs.length > 0 || draftJobs.length > 0;
+
+  // Build status line
+  function statusLine(): string {
+    const parts: string[] = [];
+    if (overdueJobs.length > 0) {
+      parts.push(`${overdueJobs.length} überfällig`);
+    }
+    if (activeJobs.length > 0) {
+      parts.push(`${activeJobs.length} aktiv`);
+    }
+    if (quoteJobs.length > 0) {
+      parts.push(`${quoteJobs.length} Angebot offen`);
+    }
+    return parts.join(' · ');
+  }
 
   if (!loading && jobs.length === 0) {
     return (
       <View style={[styles.emptyContainer, { backgroundColor: t.surface, paddingTop: insets.top }]}>
-        <Text style={[styles.emptyGreeting, { color: t.on_surface }]}>{greeting}</Text>
+        <Text style={[styles.emptyGreeting, { color: t.on_surface_variant }]}>{greeting}</Text>
+        <Text style={[styles.emptyDate, { color: t.on_surface }]}>{today}</Text>
         <Text style={[styles.emptyTitle, { color: t.on_surface }]}>Noch keine Aufträge</Text>
-        <Text style={[styles.emptySubtitle, { color: t.on_surface_variant }]}>Beschreibe einen Auftrag und Walter erstellt Angebot und Rechnung automatisch.</Text>
+        <Text style={[styles.emptySubtitle, { color: t.on_surface_variant }]}>
+          Beschreibe einen Auftrag und Walter erstellt Angebot und Rechnung automatisch.
+        </Text>
         <Pressable
           style={[styles.emptyButton, { backgroundColor: t.primary }]}
           onPress={() => router.push('/new-job')}
@@ -108,87 +120,145 @@ export default function Dashboard() {
     );
   }
 
+  let cardIndex = 0;
+
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: t.surface }]}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}
     >
-      {/* Hero — command center */}
-      <View style={[styles.hero, { backgroundColor: t.primary }]}>
-        <View style={styles.heroHeader}>
-          <Text style={[styles.heroGreeting, { color: t.on_primary }]}>
-            {loading ? '' : greeting}
-          </Text>
-          <Text style={[styles.heroMonth, { color: t.on_primary }]}>
-            {currentMonth}
-          </Text>
-        </View>
-
-        <Text
-          style={[styles.heroAmount, { color: t.on_primary }]}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.5}
-        >
-          {loading ? '—' : fmt.format(displayAmount)}
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={[styles.greeting, { color: t.on_surface_variant }]}>
+          {loading ? '' : greeting}
         </Text>
-        <Text style={[styles.heroAmountLabel, { color: t.on_primary }]}>
-          Bezahlt diesen Monat
+        <Text style={[styles.dateText, { color: t.on_surface }]}>
+          {today}
         </Text>
-
-        {/* Compact secondary metrics */}
-        <View style={styles.metricRow}>
-          <View style={styles.metricItem}>
-            <Text style={[styles.metricKey, { color: t.on_primary }]}>OFFEN</Text>
-            <Text style={[styles.metricVal, { color: t.on_primary }]}>
-              {loading ? '—' : fmt.format(ausstehend)}
-            </Text>
-          </View>
-          <View style={styles.metricItem}>
-            <Text style={[styles.metricKey, { color: t.on_primary }]}>PIPELINE</Text>
-            <Text style={[styles.metricVal, { color: t.on_primary }]}>
-              {loading ? '—' : fmt.format(pipeline)}
-            </Text>
-          </View>
-        </View>
+        {!loading && hasAnything && (
+          <Text style={[styles.statusLine, { color: t.on_surface_variant }]}>
+            {statusLine()}
+          </Text>
+        )}
+        {!loading && !hasAnything && (
+          <Text style={[styles.allClearText, { color: t.on_surface_variant }]}>
+            Alles im Griff.
+          </Text>
+        )}
       </View>
 
-      {/* Active jobs */}
-      {!loading && activeJobs.length > 0 && (
-        <View>
-          <Text style={[styles.sectionHeader, { color: t.outline }]}>AKTIV</Text>
-          {activeJobs.map((job, index) => (
-            <Animated.View
-              key={`${job.id}-${version}`}
-              entering={FadeInUp.delay(index * 60).duration(280)}
-            >
-              <JobCard job={job} onPress={() => router.push(`/job/${job.id}`)} />
-            </Animated.View>
-          ))}
+      {/* ÜBERFÄLLIG */}
+      {!loading && overdueJobs.length > 0 && (
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: t.error }]}>ÜBERFÄLLIG</Text>
+          {overdueJobs.map(({ job, daysAgo }) => {
+            const idx = cardIndex++;
+            return (
+              <Animated.View
+                key={`${job.id}-${version}`}
+                entering={FadeInUp.delay(idx * 55).duration(260)}
+              >
+                <View style={styles.annotationRow}>
+                  <View style={[styles.urgencyDot, { backgroundColor: t.error }]} />
+                  <Text style={[styles.annotationText, { color: t.error }]}>
+                    Rechnung seit {daysAgo} Tagen offen
+                  </Text>
+                </View>
+                <JobCard job={job} onPress={() => router.push(`/job/${job.id}`)} />
+              </Animated.View>
+            );
+          })}
         </View>
       )}
 
-      {/* Recent other jobs */}
-      {!loading && recentOtherJobs.length > 0 && (
-        <View>
-          <Text style={[styles.sectionHeader, { color: t.outline }]}>ZULETZT</Text>
-          {recentOtherJobs.map((job, index) => (
-            <Animated.View
-              key={`${job.id}-${version}`}
-              entering={FadeInUp.delay((activeJobs.length + index) * 60).duration(280)}
-            >
-              <JobCard job={job} onPress={() => router.push(`/job/${job.id}`)} />
-            </Animated.View>
-          ))}
+      {/* LÄUFT GERADE */}
+      {!loading && activeJobs.length > 0 && (
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: t.outline }]}>LÄUFT GERADE</Text>
+          {activeJobs.map(job => {
+            const idx = cardIndex++;
+            return (
+              <Animated.View
+                key={`${job.id}-${version}`}
+                entering={FadeInUp.delay(idx * 55).duration(260)}
+              >
+                <JobCard job={job} onPress={() => router.push(`/job/${job.id}`)} />
+              </Animated.View>
+            );
+          })}
+        </View>
+      )}
+
+      {/* RECHNUNG VERSANDT */}
+      {!loading && invoicedJobs.length > 0 && (
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: t.outline }]}>RECHNUNG VERSANDT</Text>
+          {invoicedJobs.map(({ job, daysAgo }) => {
+            const idx = cardIndex++;
+            return (
+              <Animated.View
+                key={`${job.id}-${version}`}
+                entering={FadeInUp.delay(idx * 55).duration(260)}
+              >
+                <View style={styles.annotationRow}>
+                  <Text style={[styles.annotationText, { color: t.on_surface_variant }]}>
+                    Gesendet {daysLabel(daysAgo)}
+                  </Text>
+                </View>
+                <JobCard job={job} onPress={() => router.push(`/job/${job.id}`)} />
+              </Animated.View>
+            );
+          })}
+        </View>
+      )}
+
+      {/* ANGEBOT AUSSTEHEND */}
+      {!loading && quoteJobs.length > 0 && (
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: t.outline }]}>ANGEBOT AUSSTEHEND</Text>
+          {quoteJobs.map(({ job, daysAgo }) => {
+            const idx = cardIndex++;
+            return (
+              <Animated.View
+                key={`${job.id}-${version}`}
+                entering={FadeInUp.delay(idx * 55).duration(260)}
+              >
+                <View style={styles.annotationRow}>
+                  <Text style={[styles.annotationText, { color: t.on_surface_variant }]}>
+                    Gesendet {daysLabel(daysAgo)}
+                  </Text>
+                </View>
+                <JobCard job={job} onPress={() => router.push(`/job/${job.id}`)} />
+              </Animated.View>
+            );
+          })}
+        </View>
+      )}
+
+      {/* ENTWURF */}
+      {!loading && draftJobs.length > 0 && (
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: t.outline }]}>ENTWURF</Text>
+          {draftJobs.map(job => {
+            const idx = cardIndex++;
+            return (
+              <Animated.View
+                key={`${job.id}-${version}`}
+                entering={FadeInUp.delay(idx * 55).duration(260)}
+              >
+                <JobCard job={job} onPress={() => router.push(`/job/${job.id}`)} />
+              </Animated.View>
+            );
+          })}
         </View>
       )}
 
       {!loading && jobs.length > 0 && (
         <Pressable
-          style={({ pressed }) => [styles.allJobsRow, pressed && { opacity: 0.6 }]}
+          style={({ pressed }) => [styles.allJobsRow, pressed && { opacity: 0.5 }]}
           onPress={() => router.push('/jobs')}
         >
-          <Text style={[styles.allJobsText, { color: t.primary }]}>Alle Aufträge</Text>
+          <Text style={[styles.allJobsText, { color: t.outline }]}>Alle Aufträge →</Text>
         </Pressable>
       )}
     </ScrollView>
@@ -197,84 +267,76 @@ export default function Dashboard() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { paddingHorizontal: 16, paddingBottom: 120, gap: 12 },
+  content: { paddingHorizontal: 20, paddingBottom: 120, gap: 0 },
+
+  // Header
+  header: {
+    paddingBottom: 28,
+  },
+  greeting: {
+    fontSize: 13,
+    fontFamily: F.body,
+    marginBottom: 4,
+  },
+  dateText: {
+    fontSize: 28,
+    fontFamily: F.displayBold,
+    letterSpacing: -0.5,
+    lineHeight: 34,
+  },
+  statusLine: {
+    fontSize: 13,
+    fontFamily: F.body,
+    marginTop: 6,
+  },
+  allClearText: {
+    fontSize: 15,
+    fontFamily: F.body,
+    marginTop: 6,
+    fontStyle: 'italic',
+  },
+
+  // Sections
+  section: {
+    marginBottom: 24,
+  },
+  sectionLabel: {
+    fontSize: 10,
+    fontFamily: F.labelSemi,
+    letterSpacing: 0.08 * 10,
+    textTransform: 'uppercase',
+    marginBottom: 10,
+  },
+
+  // Annotation above card
+  annotationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 5,
+    marginLeft: 2,
+  },
+  urgencyDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+  },
+  annotationText: {
+    fontSize: 11,
+    fontFamily: F.body,
+    letterSpacing: 0.01 * 11,
+  },
 
   // Empty state
-  emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  emptyGreeting: { fontSize: 28, fontFamily: F.displayBold, letterSpacing: -0.01 * 28, marginBottom: 4 },
-  emptyTitle: { fontSize: 20, fontFamily: F.headlineSemi, marginBottom: 8, marginTop: 24 },
-  emptySubtitle: { fontSize: 15, fontFamily: F.body, textAlign: 'center', marginBottom: 32 },
+  emptyContainer: { flex: 1, alignItems: 'flex-start', justifyContent: 'center', padding: 28, paddingBottom: 80 },
+  emptyGreeting: { fontSize: 13, fontFamily: F.body, marginBottom: 4 },
+  emptyDate: { fontSize: 28, fontFamily: F.displayBold, letterSpacing: -0.5, lineHeight: 34, marginBottom: 32 },
+  emptyTitle: { fontSize: 18, fontFamily: F.headlineSemi, marginBottom: 8 },
+  emptySubtitle: { fontSize: 15, fontFamily: F.body, lineHeight: 22, marginBottom: 32 },
   emptyButton: { borderRadius: 9999, paddingVertical: 14, paddingHorizontal: 28 },
   emptyButtonText: { fontSize: 15, fontFamily: F.bodySemi },
 
-  // Hero card
-  hero: {
-    borderRadius: 24,
-    padding: 20,
-    paddingBottom: 20,
-  },
-  heroHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  heroGreeting: {
-    fontSize: 12,
-    fontFamily: F.body,
-    opacity: 0.65,
-  },
-  heroMonth: {
-    fontSize: 10,
-    fontFamily: F.labelSemi,
-    letterSpacing: 0.05 * 10,
-    opacity: 0.65,
-  },
-  heroAmount: {
-    fontSize: 60,
-    fontFamily: F.displayBold,
-    fontVariant: ['tabular-nums'],
-    letterSpacing: -0.025 * 60,
-    lineHeight: 64,
-  },
-  heroAmountLabel: {
-    fontSize: 12,
-    fontFamily: F.body,
-    opacity: 0.45,
-    marginTop: 3,
-    marginBottom: 18,
-  },
-
-  // Compact metric row inside hero
-  metricRow: {
-    flexDirection: 'row',
-    gap: 20,
-  },
-  metricItem: {
-    gap: 3,
-  },
-  metricKey: {
-    fontSize: 10,
-    fontFamily: F.labelSemi,
-    letterSpacing: 0.06 * 10,
-    opacity: 0.5,
-  },
-  metricVal: {
-    fontSize: 15,
-    fontFamily: F.dataBold,
-    fontVariant: ['tabular-nums'],
-    opacity: 0.85,
-  },
-
-  // Job sections
-  sectionHeader: {
-    fontSize: 11,
-    fontFamily: F.labelSemi,
-    letterSpacing: 0.05 * 11,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-    marginTop: 4,
-  },
-  allJobsRow: { paddingVertical: 16, alignItems: 'center' },
-  allJobsText: { fontSize: 15, fontFamily: F.bodyMedium, textDecorationLine: 'underline' },
+  // Footer
+  allJobsRow: { paddingVertical: 20, alignItems: 'center' },
+  allJobsText: { fontSize: 13, fontFamily: F.body },
 });
