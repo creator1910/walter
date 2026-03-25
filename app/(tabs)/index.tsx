@@ -59,7 +59,13 @@ export default function Dashboard() {
       <View style={[styles.emptyContainer, { backgroundColor: t.surface, paddingTop: insets.top }]}>
         <Text style={[styles.greeting, { color: t.on_surface }]}>{greeting}</Text>
         <Text style={[styles.emptyTitle, { color: t.on_surface }]}>Noch keine Aufträge</Text>
-        <Text style={[styles.emptySubtitle, { color: t.on_surface_variant }]}>Tippe auf + um deinen ersten Auftrag anzulegen</Text>
+        <Text style={[styles.emptySubtitle, { color: t.on_surface_variant }]}>Beschreibe einen Auftrag und Walter erstellt Angebot und Rechnung automatisch.</Text>
+        <Pressable
+          style={[styles.emptyButton, { backgroundColor: t.primary }]}
+          onPress={() => router.push('/new-job')}
+        >
+          <Text style={[styles.emptyButtonText, { color: t.on_primary }]}>Ersten Auftrag anlegen</Text>
+        </Pressable>
       </View>
     );
   }
@@ -124,13 +130,15 @@ function StatTile({ label, value, valueColor, t }: {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { paddingHorizontal: 16, paddingBottom: 120, gap: 12 },
+  content: { paddingHorizontal: 16, paddingBottom: 120, gap: 24 },
   emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  emptyTitle: { fontSize: 17, fontFamily: F.headlineSemi, marginBottom: 8, marginTop: 24 },
-  emptySubtitle: { fontSize: 15, fontFamily: F.body, textAlign: 'center' },
+  emptyTitle: { fontSize: 20, fontFamily: F.headlineSemi, marginBottom: 8, marginTop: 24 },
+  emptySubtitle: { fontSize: 15, fontFamily: F.body, textAlign: 'center', marginBottom: 32 },
+  emptyButton: { borderRadius: 9999, paddingVertical: 14, paddingHorizontal: 28 },
+  emptyButtonText: { fontSize: 15, fontFamily: F.bodySemi },
   greeting: {
     fontSize: 28,
-    fontFamily: F.headlineSemi,
+    fontFamily: F.displayBold,
     letterSpacing: -0.01 * 28,
     marginBottom: 4,
   },
@@ -145,7 +153,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   tileValue: {
-    fontSize: 15,
+    fontSize: 18,
     fontFamily: F.dataBold,
     fontVariant: ['tabular-nums'],
   },
