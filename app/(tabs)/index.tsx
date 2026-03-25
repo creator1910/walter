@@ -15,6 +15,7 @@ import { ACTIVE_STATUSES, F, useTheme } from '../../lib/theme';
 import { Job } from '../../types';
 
 const fmt = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+const monthFmt = new Intl.DateTimeFormat('de-DE', { month: 'long' });
 
 export default function Dashboard() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const router = useRouter();
   const t = useTheme();
   const insets = useSafeAreaInsets();
+  const currentMonth = monthFmt.format(new Date()).toUpperCase();
 
   useFocusEffect(
     useCallback(() => {
@@ -57,7 +59,7 @@ export default function Dashboard() {
   if (!loading && jobs.length === 0) {
     return (
       <View style={[styles.emptyContainer, { backgroundColor: t.surface, paddingTop: insets.top }]}>
-        <Text style={[styles.greeting, { color: t.on_surface }]}>{greeting}</Text>
+        <Text style={[styles.emptyGreeting, { color: t.on_surface }]}>{greeting}</Text>
         <Text style={[styles.emptyTitle, { color: t.on_surface }]}>Noch keine Aufträge</Text>
         <Text style={[styles.emptySubtitle, { color: t.on_surface_variant }]}>Beschreibe einen Auftrag und Walter erstellt Angebot und Rechnung automatisch.</Text>
         <Pressable
@@ -75,12 +77,43 @@ export default function Dashboard() {
       style={[styles.container, { backgroundColor: t.surface }]}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}
     >
-      <Text style={[styles.greeting, { color: t.on_surface }]}>{loading ? '' : greeting}</Text>
+      {/* Hero card — primary background, "Bezahlt" as north star metric */}
+      <View style={[styles.hero, { backgroundColor: t.primary }]}>
+        <View style={styles.heroTop}>
+          <Text style={[styles.heroGreeting, { color: t.on_primary }]}>
+            {loading ? '' : greeting}
+          </Text>
+          <Text style={[styles.heroMonth, { color: t.on_primary }]}>
+            {currentMonth}
+          </Text>
+        </View>
+        <Text
+          style={[styles.heroAmount, { color: t.on_primary }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.6}
+        >
+          {loading ? '—' : fmt.format(bezahltMonat)}
+        </Text>
+        <Text style={[styles.heroLabel, { color: t.on_primary }]}>
+          Bezahlt diesen Monat
+        </Text>
+      </View>
 
-      <View style={styles.statsRow}>
-        <StatTile label="Bezahlt diesen Monat" value={loading ? '—' : fmt.format(bezahltMonat)} valueColor={t.success} t={t} />
-        <StatTile label="Ausstehend" value={loading ? '—' : fmt.format(ausstehend)} valueColor={t.warning} t={t} />
-        <StatTile label="Pipeline" value={loading ? '—' : fmt.format(pipeline)} t={t} />
+      {/* Secondary metrics */}
+      <View style={styles.metricsRow}>
+        <View style={[styles.metricTile, { backgroundColor: t.surface_card }]}>
+          <Text style={[styles.metricLabel, { color: t.outline }]}>AUSSTEHEND</Text>
+          <Text style={[styles.metricValue, { color: t.warning }]}>
+            {loading ? '—' : fmt.format(ausstehend)}
+          </Text>
+        </View>
+        <View style={[styles.metricTile, { backgroundColor: t.surface_card }]}>
+          <Text style={[styles.metricLabel, { color: t.outline }]}>PIPELINE</Text>
+          <Text style={[styles.metricValue, { color: t.on_surface }]}>
+            {loading ? '—' : fmt.format(pipeline)}
+          </Text>
+        </View>
       </View>
 
       {!loading && activeJobs.length > 0 && (
@@ -113,56 +146,77 @@ export default function Dashboard() {
   );
 }
 
-function StatTile({ label, value, valueColor, t }: {
-  label: string;
-  value: string;
-  valueColor?: string;
-  t: ReturnType<typeof useTheme>;
-}) {
-  return (
-    <View style={[styles.tile, { backgroundColor: t.surface_card }]}>
-      <Text style={[styles.tileValue, { color: valueColor ?? t.on_surface }]}>{value}</Text>
-      <Text style={[styles.tileLabel, { color: t.outline }]}>{label}</Text>
-    </View>
-  );
-}
-
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { paddingHorizontal: 16, paddingBottom: 120, gap: 24 },
+  content: { paddingHorizontal: 16, paddingBottom: 120, gap: 12 },
+
+  // Empty state
   emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
+  emptyGreeting: { fontSize: 28, fontFamily: F.displayBold, letterSpacing: -0.01 * 28, marginBottom: 4 },
   emptyTitle: { fontSize: 20, fontFamily: F.headlineSemi, marginBottom: 8, marginTop: 24 },
   emptySubtitle: { fontSize: 15, fontFamily: F.body, textAlign: 'center', marginBottom: 32 },
   emptyButton: { borderRadius: 9999, paddingVertical: 14, paddingHorizontal: 28 },
   emptyButtonText: { fontSize: 15, fontFamily: F.bodySemi },
-  greeting: {
-    fontSize: 28,
-    fontFamily: F.displayBold,
-    letterSpacing: -0.01 * 28,
-    marginBottom: 4,
+
+  // Hero card
+  hero: {
+    borderRadius: 24,
+    padding: 24,
+    paddingBottom: 28,
   },
-  statsRow: {
+  heroTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  heroGreeting: {
+    fontSize: 14,
+    fontFamily: F.body,
+  },
+  heroMonth: {
+    fontSize: 11,
+    fontFamily: F.labelSemi,
+    letterSpacing: 0.05 * 11,
+  },
+  heroAmount: {
+    fontSize: 52,
+    fontFamily: F.displayBold,
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.02 * 52,
+    lineHeight: 56,
+  },
+  heroLabel: {
+    fontSize: 13,
+    fontFamily: F.body,
+    marginTop: 6,
+    opacity: 0.55,
+  },
+
+  // Secondary metrics
+  metricsRow: {
     flexDirection: 'row',
     gap: 8,
   },
-  tile: {
+  metricTile: {
     flex: 1,
     borderRadius: 16,
-    padding: 14,
-    gap: 4,
+    padding: 16,
+    gap: 6,
   },
-  tileValue: {
-    fontSize: 18,
-    fontFamily: F.dataBold,
-    fontVariant: ['tabular-nums'],
-  },
-  tileLabel: {
+  metricLabel: {
     fontSize: 11,
     fontFamily: F.labelSemi,
     textTransform: 'uppercase',
     letterSpacing: 0.05 * 11,
   },
+  metricValue: {
+    fontSize: 18,
+    fontFamily: F.dataBold,
+    fontVariant: ['tabular-nums'],
+  },
+
+  // Job sections
   sectionHeader: {
     fontSize: 11,
     fontFamily: F.labelSemi,
