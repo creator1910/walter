@@ -12,7 +12,7 @@ function formatDate(iso: string): string {
 }
 
 export function buildHTMLTemplate(job: Job, profile?: CompanyProfile | null): string {
-  const isQuote = job.status === 'draft' || job.status === 'quote_sent' || job.status === 'accepted';
+  const isQuote = job.status === 'draft' || job.status === 'quote_sent' || job.status === 'in_progress';
   const docType = isQuote ? 'Angebot' : 'Rechnung';
   const docNumber = isQuote ? (job.quoteNumber ?? '—') : (job.invoiceNumber ?? '—');
   const docDate = isQuote
@@ -71,7 +71,7 @@ export function buildHTMLTemplate(job: Job, profile?: CompanyProfile | null): st
     .company { color: #666; line-height: 1.6; }
     .company .placeholder { color: #bbb; font-style: italic; }
     .doc-meta { text-align: right; }
-    .doc-type { font-size: 22px; font-weight: 700; color: #007AFF; margin-bottom: 4px; }
+    .doc-type { font-size: 22px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
     .doc-number { font-size: 14px; color: #666; }
     .doc-date { font-size: 13px; color: #666; margin-top: 2px; }
     .recipient { margin-bottom: 32px; }
@@ -138,7 +138,7 @@ export async function generateAndSharePDF(job: Job, forceDocType?: 'quote' | 'in
   const html = forceDocType
     ? buildHTMLTemplate({ ...job, status: forceDocType === 'quote' ? 'draft' : 'invoiced' }, profile)
     : buildHTMLTemplate(job, profile);
-  const isQuote = forceDocType === 'quote' || (!forceDocType && (job.status === 'draft' || job.status === 'quote_sent' || job.status === 'accepted'));
+  const isQuote = forceDocType === 'quote' || (!forceDocType && (job.status === 'draft' || job.status === 'quote_sent' || job.status === 'in_progress'));
   const docNumber = isQuote ? job.quoteNumber : job.invoiceNumber;
   const filename = docNumber ? `${docNumber}.pdf` : 'Dokument.pdf';
 
