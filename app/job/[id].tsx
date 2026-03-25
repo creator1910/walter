@@ -22,15 +22,15 @@ import { Job, JobStatus } from '../../types';
 
 const NEXT_STATUS: Partial<Record<JobStatus, JobStatus>> = {
   draft: 'quote_sent',
-  quote_sent: 'accepted',
-  accepted: 'invoiced',
+  quote_sent: 'in_progress',
+  in_progress: 'invoiced',
   invoiced: 'paid',
 };
 
 const NEXT_LABEL: Partial<Record<JobStatus, string>> = {
   draft: 'Angebot versenden',
-  quote_sent: 'Als angenommen markieren',
-  accepted: 'Rechnung stellen',
+  quote_sent: 'Auftrag starten',
+  in_progress: 'Rechnung stellen',
   invoiced: 'Als bezahlt markieren',
 };
 
@@ -41,17 +41,17 @@ function formatJobDate(isoString: string): string {
 const DOT_STAGES: Array<{ key: keyof typeof STAGE_DATE_MAP; label: string }> = [
   { key: 'draft',      label: 'Entwurf' },
   { key: 'quote_sent', label: 'Angebot' },
-  { key: 'accepted',   label: 'Angenom.' },
+  { key: 'in_progress', label: 'In Arbeit' },
   { key: 'invoiced',   label: 'Rechnung' },
   { key: 'paid',       label: 'Bezahlt' },
 ];
 
-const STAGE_ORDER: JobStatus[] = ['draft', 'quote_sent', 'accepted', 'invoiced', 'paid'];
+const STAGE_ORDER: JobStatus[] = ['draft', 'quote_sent', 'in_progress', 'invoiced', 'paid'];
 
 const STAGE_DATE_MAP = {
   draft:      'createdAt',
   quote_sent: 'quoteDate',
-  accepted:   'acceptedAt',
+  in_progress: 'acceptedAt',
   invoiced:   'invoiceDate',
   paid:       'paidAt',
 } as const;
@@ -132,7 +132,7 @@ export default function JobDetail() {
         ...(nextStatus === 'quote_sent' && !job.quoteNumber
           ? { quoteNumber: generateDocNumber('AN', jobs), quoteDate: now }
           : {}),
-        ...(nextStatus === 'accepted' ? { acceptedAt: now } : {}),
+        ...(nextStatus === 'in_progress' ? { acceptedAt: now } : {}),
         ...(nextStatus === 'invoiced' && !job.invoiceNumber
           ? { invoiceNumber: generateDocNumber('RE', jobs), invoiceDate: now }
           : {}),
@@ -393,7 +393,7 @@ export default function JobDetail() {
             ) : (
               <>
                 <Text style={[styles.primaryButtonText, { color: t.on_primary }]}>{nextLabel}</Text>
-                {(job.status === 'draft' || job.status === 'accepted') && (
+                {(job.status === 'draft' || job.status === 'in_progress') && (
                   <Text style={[styles.primaryButtonSubLabel, { color: t.on_primary }]}>PDF wird automatisch geteilt</Text>
                 )}
               </>
@@ -484,9 +484,9 @@ const styles = StyleSheet.create({
   },
   iconActionPressed: { opacity: 0.7 },
   iconActionIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
