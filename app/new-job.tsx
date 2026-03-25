@@ -372,7 +372,7 @@ export default function NewJob() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   scroll: { padding: 20, gap: 12 },
-  label: { fontSize: 17, fontFamily: F.headlineSemi },
+  label: { fontSize: 20, fontFamily: F.headlineSemi },
   hint: { fontSize: 15, fontFamily: F.body, lineHeight: 21 },
 
   pillContainer: {
