@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   heroAmount: {
-    fontSize: 32,
+    fontSize: 36,
     fontFamily: F.dataBold,
     fontVariant: ['tabular-nums'],
     letterSpacing: -1,
