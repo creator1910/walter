@@ -43,7 +43,7 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: t.outline,
         tabBarLabelStyle: styles.tabLabel,
         tabBarBackground: () => (
-          <View style={[StyleSheet.absoluteFill, styles.tabBarBlurClip]}>
+          <View style={[StyleSheet.absoluteFill, styles.tabBarBlurClip, { borderColor: t.outline_variant + '26' }]}>
             <BlurView tint="systemChromeMaterial" intensity={80} style={StyleSheet.absoluteFill} />
           </View>
         ),
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     borderRadius: TAB_BAR_HEIGHT / 2,
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(128,128,128,0.2)',
+    // borderColor set inline via theme (t.outline_variant at 15% opacity)
   },
   tabLabel: {
     fontSize: 11,
