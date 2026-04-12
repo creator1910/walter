@@ -131,11 +131,11 @@ export default function JobDetail() {
         ...job,
         status: nextStatus,
         ...(nextStatus === 'quote_sent' && !job.quoteNumber
-          ? { quoteNumber: generateDocNumber('AN', jobs), quoteDate: now }
+          ? { quoteNumber: await generateDocNumber('AN', jobs), quoteDate: now }
           : {}),
         ...(nextStatus === 'in_progress' ? { acceptedAt: now } : {}),
         ...(nextStatus === 'invoiced' && !job.invoiceNumber
-          ? { invoiceNumber: generateDocNumber('RE', jobs), invoiceDate: now }
+          ? { invoiceNumber: await generateDocNumber('RE', jobs), invoiceDate: now }
           : {}),
         ...(nextStatus === 'paid' ? { paidAt: now } : {}),
       };
