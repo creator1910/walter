@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconActionLabel: { fontSize: 11, fontFamily: F.body },
+  iconActionLabel: { fontSize: 11, fontFamily: F.labelSemi },
 
   // Scroll
   scroll: { flex: 1 },
