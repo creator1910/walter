@@ -140,7 +140,7 @@ function Field({
     <View style={styles.field}>
       <Text style={[styles.label, { color: t.on_surface_variant }]}>{label}</Text>
       <TextInput
-        style={[styles.input, { color: t.on_surface, borderBottomColor: t.outline_variant }]}
+        style={[styles.input, { color: t.on_surface, borderBottomColor: t.outline_variant + '66' }]}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
