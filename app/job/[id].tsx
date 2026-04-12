@@ -467,9 +467,9 @@ const styles = StyleSheet.create({
   },
   stepCol: { alignItems: 'center', gap: 2, minWidth: 44 },
   stepDot: { width: 8, height: 8, borderRadius: 4 },
-  stepDate: { fontSize: 10, fontFamily: F.bodyMedium },
+  stepDate: { fontSize: 11, fontFamily: F.bodyMedium },
   stepDatePlaceholder: { height: 14 },
-  stepLabel: { fontSize: 9, fontFamily: F.body },
+  stepLabel: { fontSize: 10, fontFamily: F.body },
 
   // Icon row
   iconRow: {
