@@ -301,9 +301,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: F.labelSemi,
-    letterSpacing: 0.08 * 10,
+    letterSpacing: 0.05 * 11,
     textTransform: 'uppercase',
     marginBottom: 10,
   },
