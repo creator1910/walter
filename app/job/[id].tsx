@@ -519,12 +519,12 @@ const styles = StyleSheet.create({
   lineItemLeft: { flex: 1, marginRight: 12 },
   lineItemDesc: { fontSize: 15, fontFamily: F.body },
   lineItemQty: { fontSize: 12, fontFamily: F.body, marginTop: 2 },
-  lineItemTotal: { fontSize: 15, fontFamily: F.bodyMedium, fontVariant: ['tabular-nums'] },
+  lineItemTotal: { fontSize: 15, fontFamily: F.dataBold, fontVariant: ['tabular-nums'] },
 
   // Row (totals)
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 },
   rowLabel: { fontSize: 15, fontFamily: F.body },
-  rowValue: { fontSize: 15, fontFamily: F.body, fontVariant: ['tabular-nums'] },
+  rowValue: { fontSize: 15, fontFamily: F.dataBold, fontVariant: ['tabular-nums'] },
   rowLabelBold: { fontFamily: F.bodySemi },
   rowValueBold: { fontFamily: F.dataBold },
 
