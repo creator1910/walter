@@ -1,0 +1,1 @@
+/Users/oleknorr/Projects/walter/.claude/skills/gstack/design-html/SKILL.md
