@@ -13,6 +13,7 @@ import {
 import { useFocusEffect, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { loadProfile, saveProfile } from '../../lib/storage';
+import { supabase } from '../../lib/supabase';
 import { F, useTheme } from '../../lib/theme';
 import { CompanyProfile } from '../../types';
 
@@ -114,6 +115,22 @@ export default function ProfileScreen() {
           <Field label="IBAN" value={profile.iban} onChangeText={v => set('iban', v)} placeholder="DE89 3704 0044 0532 0130 00" autoCapitalize="characters" t={t} />
           <Field label="BIC" value={profile.bic} onChangeText={v => set('bic', v)} placeholder="COBADEFFXXX" autoCapitalize="characters" t={t} />
         </View>
+
+        <Pressable
+          style={({ pressed }) => [styles.signOutButton, pressed && { opacity: 0.6 }]}
+          onPress={() => {
+            Alert.alert('Abmelden', 'Wirklich abmelden?', [
+              { text: 'Abbrechen', style: 'cancel' },
+              {
+                text: 'Abmelden',
+                style: 'destructive',
+                onPress: () => supabase.auth.signOut(),
+              },
+            ]);
+          }}
+        >
+          <Text style={[styles.signOutText, { color: t.error }]}>Abmelden</Text>
+        </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -182,4 +199,6 @@ const styles = StyleSheet.create({
   zipField: { width: 90 },
   cityField: { flex: 1 },
   headerSave: { fontSize: 17, fontFamily: F.bodySemi },
+  signOutButton: { alignItems: 'center', paddingVertical: 16 },
+  signOutText: { fontSize: 15, fontFamily: F.body },
 });
