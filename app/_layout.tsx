@@ -11,7 +11,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useTheme } from '../lib/theme';
+import { F, useTheme } from '../lib/theme';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -34,7 +34,7 @@ export default function RootLayout() {
         screenOptions={{
           headerStyle: { backgroundColor: t.surface },
           headerTintColor: t.on_surface,
-          headerTitleStyle: { fontFamily: 'Geist_600SemiBold', fontSize: 17 },
+          headerTitleStyle: { fontFamily: F.headlineSemi, fontSize: 17 },
           contentStyle: { backgroundColor: t.surface },
           headerShadowVisible: false,
           headerBackTitle: 'Zurück',
