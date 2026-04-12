@@ -37,6 +37,7 @@ export default function RootLayout() {
           headerTitleStyle: { fontFamily: 'Geist_600SemiBold', fontSize: 17 },
           contentStyle: { backgroundColor: t.surface },
           headerShadowVisible: false,
+          headerBackTitle: 'Zurück',
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

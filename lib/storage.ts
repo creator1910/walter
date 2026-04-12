@@ -16,7 +16,10 @@ export async function saveProfile(profile: CompanyProfile): Promise<void> {
 
 export async function loadJobs(): Promise<Job[]> {
   const raw = await AsyncStorage.getItem(JOBS_KEY);
-  return raw ? JSON.parse(raw) : [];
+  if (!raw) return [];
+  const jobs: Job[] = JSON.parse(raw);
+  // Migrate: 'accepted' → 'in_progress' (renamed in v2)
+  return jobs.map(j => (j.status as string) === 'accepted' ? { ...j, status: 'in_progress' as const } : j);
 }
 
 export async function saveJob(job: Job): Promise<void> {

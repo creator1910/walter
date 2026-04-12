@@ -7,7 +7,7 @@ import { loadJobs, saveJob } from '../../../lib/storage';
 import { F, useTheme } from '../../../lib/theme';
 import { Job } from '../../../types';
 
-const SENT_STATUSES = new Set(['quote_sent', 'accepted', 'invoiced', 'paid']);
+const SENT_STATUSES = new Set(['quote_sent', 'in_progress', 'invoiced', 'paid']);
 
 export default function EditJob() {
   const { id } = useLocalSearchParams<{ id: string }>();

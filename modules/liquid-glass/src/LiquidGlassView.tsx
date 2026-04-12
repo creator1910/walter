@@ -4,7 +4,7 @@ import { Platform, ViewProps } from 'react-native';
 // On iOS 26+, the native LiquidGlassModule uses SwiftUI .glassEffect().
 // We only activate the native path after a rebuild that includes the Swift module.
 // Until then, BlurView (systemChromeMaterial) is the fallback.
-const NATIVE_ENABLED = true; // flip to true after `npx expo run:ios` with iOS 26 SDK
+const NATIVE_ENABLED = false; // flip to true after `npx expo run:ios` with iOS 26 SDK
 
 let NativeLiquidGlassView: React.ComponentType<ViewProps> | null = null;
 

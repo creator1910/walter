@@ -1,4 +1,4 @@
-export type JobStatus = 'draft' | 'quote_sent' | 'accepted' | 'invoiced' | 'paid';
+export type JobStatus = 'draft' | 'quote_sent' | 'in_progress' | 'invoiced' | 'paid';
 
 export interface CompanyProfile {
   name: string;

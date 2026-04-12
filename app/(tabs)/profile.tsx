@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -10,7 +10,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useNavigation } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { loadProfile, saveProfile } from '../../lib/storage';
 import { F, useTheme } from '../../lib/theme';
 import { CompanyProfile } from '../../types';
@@ -31,6 +32,10 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<CompanyProfile>(EMPTY);
   const [saving, setSaving] = useState(false);
   const t = useTheme();
+  const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+  // Tab bar is 60px tall, positioned at insets.bottom + 8 + 8 (from layout)
+  const tabBarHeight = 60 + Math.max(insets.bottom, 8) + 8;
 
   useFocusEffect(
     useCallback(() => {
@@ -60,6 +65,19 @@ export default function ProfileScreen() {
     }
   }
 
+  useEffect(() => {
+    navigation.setOptions({
+      headerRightContainerStyle: { paddingRight: 16 },
+      headerRight: () => (
+        <Pressable onPress={handleSave} disabled={saving} hitSlop={12}>
+          <Text style={[styles.headerSave, { color: saving ? t.outline : t.primary }]}>
+            {saving ? 'Speichern…' : 'Speichern'}
+          </Text>
+        </Pressable>
+      ),
+    });
+  }, [saving, profile, t]);
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -67,7 +85,7 @@ export default function ProfileScreen() {
     >
       <ScrollView
         style={[styles.container, { backgroundColor: t.surface }]}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + 16 }]}
       >
         <View style={[styles.section, { backgroundColor: t.surface_card }]}>
           <Text style={[styles.sectionTitle, { color: t.outline }]}>FIRMA</Text>
@@ -96,20 +114,6 @@ export default function ProfileScreen() {
           <Field label="IBAN" value={profile.iban} onChangeText={v => set('iban', v)} placeholder="DE89 3704 0044 0532 0130 00" autoCapitalize="characters" t={t} />
           <Field label="BIC" value={profile.bic} onChangeText={v => set('bic', v)} placeholder="COBADEFFXXX" autoCapitalize="characters" t={t} />
         </View>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.button,
-            { backgroundColor: saving ? t.surface_high : t.primary },
-            pressed && { transform: [{ scale: 1.02 }] },
-          ]}
-          onPress={handleSave}
-          disabled={saving}
-        >
-          <Text style={[styles.buttonText, { color: saving ? t.outline : t.on_primary }]}>
-            {saving ? 'Speichern…' : 'Speichern'}
-          </Text>
-        </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -177,10 +181,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 10 },
   zipField: { width: 90 },
   cityField: { flex: 1 },
-  button: {
-    borderRadius: 9999,
-    padding: 16,
-    alignItems: 'center',
-  },
-  buttonText: { fontSize: 16, fontFamily: F.bodySemi },
+  headerSave: { fontSize: 17, fontFamily: F.bodySemi },
 });

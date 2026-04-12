@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { FileText, MoreHorizontal, Pencil, Plus, Share2 } from 'lucide-react-native';
+import { FileText, MoreHorizontal, Pencil, Plus, Receipt } from 'lucide-react-native';
 import {
   ActivityIndicator,
   Alert,
@@ -58,18 +58,19 @@ const STAGE_DATE_MAP = {
 
 
 function IconAction({
-  icon, label, onPress, loading, t,
+  icon, label, onPress, loading, disabled, t,
 }: {
   icon: React.ReactNode;
   label: string;
   onPress: () => void;
   loading?: boolean;
+  disabled?: boolean;
   t: ReturnType<typeof useTheme>;
 }) {
   return (
     <Pressable
-      style={({ pressed }) => [styles.iconAction, pressed && styles.iconActionPressed]}
-      onPress={onPress}
+      style={({ pressed }) => [styles.iconAction, (disabled || loading) && styles.iconActionDisabled, pressed && !(disabled || loading) && styles.iconActionPressed]}
+      onPress={disabled ? undefined : onPress}
       hitSlop={8}
     >
       <View style={[styles.iconActionIconWrap, { backgroundColor: t.surface_high }]}>
@@ -276,9 +277,9 @@ export default function JobDetail() {
 
       {/* Icon action row */}
       <View style={[styles.iconRow, { backgroundColor: t.surface_card }]}>
-        <IconAction icon={<FileText size={20} color={t.on_surface_variant} strokeWidth={1.5} />} label="PDF" onPress={() => handleSharePDF(job.invoiceNumber ? 'invoice' : 'quote')} loading={sharingPDF !== null} t={t} />
+        <IconAction icon={<FileText size={20} color={t.on_surface_variant} strokeWidth={1.5} />} label="Angebot" onPress={() => handleSharePDF('quote')} loading={sharingPDF === 'quote'} t={t} />
+        <IconAction icon={<Receipt size={20} color={job.invoiceNumber ? t.on_surface_variant : t.outline} strokeWidth={1.5} />} label="Rechnung" onPress={() => handleSharePDF('invoice')} loading={sharingPDF === 'invoice'} disabled={!job.invoiceNumber} t={t} />
         <IconAction icon={<Pencil size={20} color={t.on_surface_variant} strokeWidth={1.5} />} label="Bearbeiten" onPress={() => router.push(`/job/edit/${job.id}`)} t={t} />
-        <IconAction icon={<Share2 size={20} color={t.on_surface_variant} strokeWidth={1.5} />} label="Teilen" onPress={() => handleSharePDF(job.quoteNumber ? 'quote' : 'invoice')} loading={sharingPDF !== null} t={t} />
         <IconAction icon={<MoreHorizontal size={20} color={t.on_surface_variant} strokeWidth={1.5} />} label="Mehr" onPress={handleMehr} t={t} />
       </View>
 
@@ -483,6 +484,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   iconActionPressed: { opacity: 0.7 },
+  iconActionDisabled: { opacity: 0.35 },
   iconActionIconWrap: {
     width: 44,
     height: 44,

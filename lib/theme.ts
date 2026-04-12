@@ -43,8 +43,8 @@ const lightTokens = {
   status_draft_text:    '#747878',
   status_quote_bg:      'rgba(26, 28, 28, 0.08)',
   status_quote_text:    '#1A1C1C',
-  status_accepted_bg:   'rgba(45, 122, 79, 0.12)',
-  status_accepted_text: '#2D7A4F',
+  status_in_progress_bg:   'rgba(186, 26, 26, 0.12)',
+  status_in_progress_text: '#BA1A1A',
   status_invoiced_bg:   'rgba(138, 109, 0, 0.12)',
   status_invoiced_text: '#8A6D00',
   status_paid_bg:       'rgba(45, 122, 79, 0.12)',
@@ -87,8 +87,8 @@ const darkTokens = {
   status_draft_text:    '#8A8A8A',
   status_quote_bg:      'rgba(255, 255, 255, 0.08)',
   status_quote_text:    '#E6E6E6',
-  status_accepted_bg:   'rgba(74, 222, 128, 0.12)',
-  status_accepted_text: '#4ADE80',
+  status_in_progress_bg:   'rgba(255, 107, 107, 0.12)',
+  status_in_progress_text: '#FF6B6B',
   status_invoiced_bg:   'rgba(251, 191, 36, 0.12)',
   status_invoiced_text: '#FBBF24',
   status_paid_bg:       'rgba(74, 222, 128, 0.12)',
@@ -123,12 +123,12 @@ export function useTheme(): ThemeTokens {
 // ---------------------------------------------------------------------------
 // Status helpers (not color-dependent — kept as simple maps)
 // ---------------------------------------------------------------------------
-export const ACTIVE_STATUSES = new Set<JobStatus>(['accepted', 'invoiced']);
+export const ACTIVE_STATUSES = new Set<JobStatus>(['in_progress', 'invoiced']);
 
 export const STATUS_LABEL: Record<string, string> = {
   draft:      'Entwurf',
   quote_sent: 'Angebot',
-  accepted:   'Angenommen',
+  in_progress: 'In Arbeit',
   invoiced:   'Rechnung',
   paid:       'Bezahlt',
 };
@@ -140,7 +140,7 @@ export function statusColors(t: ThemeTokens, status: string) {
   const map: Record<string, { bg: string; text: string }> = {
     draft:      { bg: t.status_draft_bg,      text: t.status_draft_text },
     quote_sent: { bg: t.status_quote_bg,      text: t.status_quote_text },
-    accepted:   { bg: t.status_accepted_bg,   text: t.status_accepted_text },
+    in_progress: { bg: t.status_in_progress_bg, text: t.status_in_progress_text },
     invoiced:   { bg: t.status_invoiced_bg,    text: t.status_invoiced_text },
     paid:       { bg: t.status_paid_bg,        text: t.status_paid_text },
   };

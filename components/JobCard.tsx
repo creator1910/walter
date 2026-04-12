@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming, Easing } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { calculateTotals } from '../lib/claude';
@@ -12,6 +14,28 @@ export default function JobCard({ job, onPress }: { job: Job; onPress: () => voi
   const sc = statusColors(t, job.status);
   const gross = calculateTotals(job.lineItems, job.vatRate).gross;
   const photo = job.photos?.[0];
+  const isActive = job.status === 'in_progress';
+
+  const dotOpacity = useSharedValue(1);
+
+  useEffect(() => {
+    if (isActive) {
+      dotOpacity.value = withRepeat(
+        withSequence(
+          withTiming(0.25, { duration: 900, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 900, easing: Easing.inOut(Easing.ease) }),
+        ),
+        -1,
+        false,
+      );
+    } else {
+      dotOpacity.value = 1;
+    }
+  }, [isActive]);
+
+  const animatedDotStyle = useAnimatedStyle(() => ({
+    opacity: dotOpacity.value,
+  }));
 
   return (
     <Pressable
@@ -46,7 +70,7 @@ export default function JobCard({ job, onPress }: { job: Job; onPress: () => voi
           {job.customer.name || 'Unbekannter Kunde'}
         </Text>
         <View style={[styles.badge, { backgroundColor: sc.bg }]}>
-          <View style={[styles.badgeDot, { backgroundColor: sc.text }]} />
+          <Animated.View style={[styles.badgeDot, { backgroundColor: sc.text }, animatedDotStyle]} />
           <Text style={[styles.badgeText, { color: sc.text }]}>{STATUS_LABEL[job.status]}</Text>
         </View>
       </View>

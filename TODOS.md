@@ -78,6 +78,36 @@ Built: `components/JobCard.tsx` — shared card with photo background (0.13 opac
 
 ---
 
+## P2: GoBD Audit Trail
+
+**What:** Replace the `is_locked` boolean with a proper audit trail — store a SHA-256 hash of each invoice's content at the time of issuance, in an append-only `invoice_audit_log` table. Optionally display a "Dieses Dokument wurde nicht verändert" verification status in the job detail screen.
+
+**Why:** German GoBD compliance requires not just preventing edits, but proving a document has not been altered since finalization. The current `is_locked` flag prevents future edits but cannot prove the document wasn't altered before the lock was set. This becomes legally relevant when charging German businesses and when tax authorities request audit evidence.
+
+**Pros:** Full GoBD compliance; builds trust with business customers; relatively simple (SHA-256 of the invoice HTML or JSON at lock time).
+**Cons:** Adds a Postgres table and a cloud function call at invoice issuance; once set, the hash is permanent.
+**Context:** Added during /plan-eng-review of cloud backend (2026-04-12). Current `is_locked` is adequate for beta. Required before App Store GA or charging customers.
+**Effort:** M → with CC+gstack: S
+**Priority:** P2
+**Depends on:** Cloud backend (Supabase) shipping first.
+
+---
+
+## P4: Parallel photo upload
+
+**What:** Switch photo uploads in `lib/photos.ts` from sequential to `Promise.all()` — upload all photos for a job simultaneously instead of one by one.
+
+**Why:** With 5 photos, sequential upload blocks job save for the combined upload time (network-dependent). Parallel uploads reduce wall-clock time to the slowest single upload.
+
+**Pros:** Better UX, especially on spotty mobile connections where one photo might be fast and another slow.
+**Cons:** Higher peak bandwidth; more concurrent connections to Supabase Storage.
+**Context:** Added during /plan-eng-review of cloud backend (2026-04-12). Sequential is acceptable for beta. Worth fixing when photo upload is a perceptible delay.
+**Effort:** S → with CC+gstack: XS
+**Priority:** P4
+**Depends on:** Cloud backend (lib/photos.ts) shipping first.
+
+---
+
 ## P4: Kunde wiederverwenden
 
 **What:** When creating a new job, offer to pick an existing customer from previous jobs instead of re-typing name/address/phone.
