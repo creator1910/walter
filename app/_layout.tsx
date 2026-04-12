@@ -8,6 +8,7 @@ import {
   Inter_600SemiBold,
 } from '@expo-google-fonts/inter';
 import { useFonts } from 'expo-font';
+import * as Linking from 'expo-linking';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
@@ -26,36 +27,80 @@ export default function RootLayout() {
   });
 
   const [session, setSession] = useState<Session | null | undefined>(undefined); // undefined = loading
+  const [hasProfile, setHasProfile] = useState<boolean | undefined>(undefined);
   const scheme = useColorScheme();
   const t = useTheme();
   const router = useRouter();
   const segments = useSegments();
 
-  // Check initial session, then subscribe to auth changes
+  // Exchange deep-link auth tokens (arrives after email confirmation tap)
+  async function handleDeepLink(url: string) {
+    const fragment = url.includes('#') ? url.split('#')[1] : '';
+    if (!fragment) return;
+    const params = new URLSearchParams(fragment);
+    const accessToken = params.get('access_token');
+    const refreshToken = params.get('refresh_token');
+    if (accessToken && refreshToken) {
+      await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+    }
+  }
+
+  // Check initial session, subscribe to auth changes, and handle deep links
   useEffect(() => {
+    // Initial session
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
     });
 
+    // Auth state changes (login, logout, token refresh, email confirmation)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
     });
 
-    return () => subscription.unsubscribe();
+    // Deep link: app already open (background → foreground via confirmation link)
+    const linkSub = Linking.addEventListener('url', ({ url }) => handleDeepLink(url));
+
+    // Deep link: app was closed and opened via confirmation link
+    Linking.getInitialURL().then(url => { if (url) handleDeepLink(url); });
+
+    return () => {
+      subscription.unsubscribe();
+      linkSub.remove();
+    };
   }, []);
 
-  // Redirect based on auth state (only after both fonts and session are ready)
+  // When session appears, check whether this user has filled in their profile
+  useEffect(() => {
+    if (!session) {
+      setHasProfile(undefined);
+      return;
+    }
+    supabase
+      .from('profiles')
+      .select('firm_name')
+      .eq('id', session.user.id)
+      .single()
+      .then(({ data }) => {
+        setHasProfile(!!(data as { firm_name?: string } | null)?.firm_name);
+      });
+  }, [session?.user.id]);
+
+  // Redirect based on auth state (only after fonts, session, and profile check are ready)
   useEffect(() => {
     if (!fontsLoaded || session === undefined) return;
 
-    const inAuthGroup = segments[0] === 'auth';
+    const segs = segments as string[];
+    const inAuthGroup = segs[0] === 'auth';
+    const inVerifyEmail = segs[1] === 'verify-email';
 
     if (!session && !inAuthGroup) {
       router.replace('/auth/welcome');
-    } else if (session && inAuthGroup) {
-      router.replace('/');
+    } else if (session && inAuthGroup && !inVerifyEmail) {
+      // Profile check not yet complete → wait
+      if (hasProfile === undefined) return;
+      router.replace(hasProfile ? '/' : '/auth/profile-setup');
     }
-  }, [fontsLoaded, session, segments]);
+  }, [fontsLoaded, session, segments, hasProfile]);
 
   // Wait for fonts AND initial session check before rendering anything
   if (!fontsLoaded || session === undefined) return null;

@@ -47,9 +47,9 @@ export default function SignUpScreen() {
         return;
       }
 
-      // Session is set automatically — _layout.tsx will detect it and redirect.
-      // But we navigate to profile-setup first to collect firm details.
-      router.replace('/auth/profile-setup');
+      // Email confirmation required — go to verify screen.
+      // Session will arrive after the user taps the confirmation link.
+      router.replace({ pathname: '/auth/verify-email', params: { email: trimmedEmail } });
     } finally {
       setLoading(false);
     }
