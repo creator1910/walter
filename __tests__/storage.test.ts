@@ -76,33 +76,33 @@ describe('generateId', () => {
 describe('generateDocNumber', () => {
   const year = new Date().getFullYear();
 
-  it('starts at 0001 with no existing docs', () => {
-    expect(generateDocNumber('AN', [])).toBe(`AN-${year}-0001`);
+  it('starts at 0001 with no existing docs', async () => {
+    expect(await generateDocNumber('AN', [])).toBe(`AN-${year}-0001`);
   });
 
-  it('increments from existing quote numbers', () => {
+  it('increments from existing quote numbers', async () => {
     const jobs: Job[] = [
       { ...baseJob, quoteNumber: `AN-${year}-0003` },
       { ...baseJob, quoteNumber: `AN-${year}-0001` },
     ];
-    expect(generateDocNumber('AN', jobs)).toBe(`AN-${year}-0004`);
+    expect(await generateDocNumber('AN', jobs)).toBe(`AN-${year}-0004`);
   });
 
-  it('generates invoice numbers independently of quote numbers', () => {
+  it('generates invoice numbers independently of quote numbers', async () => {
     const jobs: Job[] = [
       { ...baseJob, quoteNumber: `AN-${year}-0005` },
     ];
-    expect(generateDocNumber('RE', jobs)).toBe(`RE-${year}-0001`);
+    expect(await generateDocNumber('RE', jobs)).toBe(`RE-${year}-0001`);
   });
 
-  it('ignores numbers from previous years', () => {
+  it('ignores numbers from previous years', async () => {
     const jobs: Job[] = [
       { ...baseJob, quoteNumber: `AN-${year - 1}-0099` },
     ];
-    expect(generateDocNumber('AN', jobs)).toBe(`AN-${year}-0001`);
+    expect(await generateDocNumber('AN', jobs)).toBe(`AN-${year}-0001`);
   });
 
-  it('pads to 4 digits', () => {
-    expect(generateDocNumber('AN', [])).toMatch(/AN-\d{4}-\d{4}/);
+  it('pads to 4 digits', async () => {
+    expect(await generateDocNumber('AN', [])).toMatch(/AN-\d{4}-\d{4}/);
   });
 });
