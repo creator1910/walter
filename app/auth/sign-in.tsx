@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 24, gap: 20 },
 
-  title: { fontSize: 28, fontFamily: F.displayBold, letterSpacing: -0.5, lineHeight: 34 },
+  title: { fontSize: 28, fontFamily: F.headlineSemi, letterSpacing: -0.5, lineHeight: 34 },
   subtitle: { fontSize: 15, fontFamily: F.body, lineHeight: 22, marginTop: -8 },
 
   card: { borderRadius: 16, padding: 16, gap: 16 },
